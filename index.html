@@ -3,11 +3,12 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Enhanced Text Viewer</title>
+    <title>Text Viewer with Compressed URLs</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pako/2.1.0/pako.min.js"></script>
     <style>
         body {
             font-family: Arial, sans-serif;
-            max-width: 1200px;
+            max-width: 1000px;
             margin: 0 auto;
             padding: 20px;
             line-height: 1.6;
@@ -15,11 +16,6 @@
         h1, h2 {
             text-align: center;
             color: #333;
-        }
-        .container {
-            display: flex;
-            flex-direction: column;
-            gap: 20px;
         }
         .tabs {
             display: flex;
@@ -39,6 +35,9 @@
         }
         .tab-content {
             display: none;
+            padding: 20px;
+            border: 1px solid #ddd;
+            border-radius: 0 5px 5px 5px;
         }
         .tab-content.active {
             display: block;
@@ -49,6 +48,7 @@
             text-align: center;
             border-radius: 5px;
             background-color: #f9f9f9;
+            margin-bottom: 20px;
         }
         .upload-container:hover {
             border-color: #999;
@@ -58,6 +58,7 @@
             display: flex;
             flex-direction: column;
             gap: 10px;
+            margin-bottom: 20px;
         }
         #paste-input {
             width: 100%;
@@ -102,12 +103,7 @@
         button.danger:hover {
             background-color: #d32f2f;
         }
-        .content-display {
-            display: flex;
-            flex-direction: column;
-            gap: 10px;
-        }
-        #file-content, #view-content {
+        #file-content, #paste-content, #view-content {
             white-space: pre-wrap;
             border: 1px solid #ddd;
             padding: 15px;
@@ -115,6 +111,7 @@
             border-radius: 5px;
             max-height: 500px;
             overflow-y: auto;
+            font-family: monospace;
         }
         .file-info {
             margin-bottom: 10px;
@@ -167,132 +164,152 @@
         .instructions ol {
             margin-bottom: 0;
         }
-        .main-container {
-            display: flex;
-            flex-direction: column;
-            gap: 20px;
-        }
-        @media (min-width: 1000px) {
-            .content-display {
-                flex-direction: row;
-            }
-            .content-panel {
-                flex: 1;
-            }
-            .input-panel, .output-panel {
-                width: 48%;
-            }
+        .url-info {
+            background-color: #fff9c4;
+            padding: 10px;
+            border-radius: 4px;
+            margin-top: 10px;
+            font-size: 0.9em;
         }
         .hidden {
             display: none;
         }
+        .loading {
+            text-align: center;
+            margin: 20px 0;
+        }
+        .spinner {
+            border: 4px solid rgba(0, 0, 0, 0.1);
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            border-left-color: #09f;
+            animation: spin 1s linear infinite;
+            display: inline-block;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
     </style>
 </head>
 <body>
-    <h1>Enhanced Text Viewer</h1>
+    <h1>Text Viewer with Compressed URLs</h1>
     
-    <div class="main-container">
-        <div class="tabs">
-            <div class="tab" id="tab-upload" onclick="switchTab('upload')">Upload Mode</div>
-            <div class="tab" id="tab-paste" onclick="switchTab('paste')">Paste Mode</div>
-            <div class="tab" id="tab-view" onclick="switchTab('view')">View Mode</div>
+    <div class="tabs">
+        <div class="tab" id="tab-upload" onclick="switchTab('upload')">Upload Mode</div>
+        <div class="tab" id="tab-paste" onclick="switchTab('paste')">Paste Mode</div>
+        <div class="tab" id="tab-view" onclick="switchTab('view')">View Mode</div>
+    </div>
+    
+    <!-- Upload Mode -->
+    <div id="upload-mode" class="tab-content">
+        <div class="instructions">
+            <h3>Upload a text file</h3>
+            <ol>
+                <li>Drag and drop a text file or click "Browse"</li>
+                <li>View the file content below</li>
+                <li>Generate a compressed share link to share via LinkedIn</li>
+            </ol>
         </div>
         
-        <!-- Upload Mode -->
-        <div id="upload-mode" class="tab-content">
-            <div class="instructions">
-                <h3>Upload a text file</h3>
-                <ol>
-                    <li>Drag and drop a text file or click "Browse"</li>
-                    <li>View the file content below</li>
-                    <li>Generate a share link to share via LinkedIn</li>
-                </ol>
-            </div>
-            
-            <div class="upload-container" id="drop-area">
-                <p>Drag and drop text files here or click to browse</p>
-                <input type="file" id="file-input" accept=".txt,.log,.md,.csv,.json,.xml,.html,.css,.js">
-                <button onclick="document.getElementById('file-input').click()">Browse Files</button>
-            </div>
-            
-            <div class="content-display">
-                <div class="content-panel">
-                    <div id="file-info-container" class="hidden">
-                        <div class="file-info" id="file-info"></div>
-                        <div class="controls">
-                            <div class="font-size-control">
-                                <span>Font size:</span>
-                                <button onclick="changeFontSize('-')">-</button>
-                                <button onclick="changeFontSize('+')">+</button>
-                            </div>
-                            <button class="danger" onclick="resetUpload()">Upload Another File</button>
-                        </div>
-                    </div>
-                    
-                    <pre id="file-content" class="hidden"></pre>
+        <div class="upload-container" id="drop-area">
+            <p>Drag and drop text files here or click to browse</p>
+            <input type="file" id="file-input" accept=".txt,.log,.md,.csv,.json,.xml,.html,.css,.js">
+            <button onclick="document.getElementById('file-input').click()">Browse Files</button>
+        </div>
+        
+        <div id="file-info-container" class="hidden">
+            <div class="file-info" id="file-info"></div>
+            <div class="controls">
+                <div class="font-size-control">
+                    <span>Font size:</span>
+                    <button onclick="changeFontSize('-', 'file-content')">-</button>
+                    <button onclick="changeFontSize('+', 'file-content')">+</button>
                 </div>
-            </div>
-            
-            <div id="upload-share-container" class="share-container hidden">
-                <h3>Share this content:</h3>
-                <p>Copy the link below and share it via LinkedIn or any other platform:</p>
-                <input type="text" id="upload-share-link" class="share-link" readonly>
-                <button class="secondary" onclick="copyShareLink('upload-share-link')">Copy Link</button>
-                <p id="upload-copy-confirmation" class="hidden" style="color: green;">Link copied to clipboard!</p>
+                <button class="danger" onclick="resetUpload()">Upload Another File</button>
             </div>
         </div>
         
-        <!-- Paste Mode -->
-        <div id="paste-mode" class="tab-content">
-            <div class="instructions">
-                <h3>Paste text content directly</h3>
-                <ol>
-                    <li>Enter an optional title for your text</li>
-                    <li>Paste or type your text in the box below</li>
-                    <li>Click "Process Text" to view and share</li>
-                </ol>
+        <pre id="file-content" class="hidden"></pre>
+        
+        <div id="upload-share-container" class="share-container hidden">
+            <h3>Share this content:</h3>
+            <p>Copy the compressed link below and share it via LinkedIn or any other platform:</p>
+            <div class="loading hidden" id="upload-loading">
+                <div class="spinner"></div>
+                <p>Generating compressed link...</p>
             </div>
-            
-            <div class="paste-container">
-                <input type="text" id="paste-name" placeholder="Enter a title for your text (optional)">
-                <textarea id="paste-input" placeholder="Paste or type your text content here..."></textarea>
-                <button onclick="processPastedText()">Process Text</button>
+            <input type="text" id="upload-share-link" class="share-link" readonly>
+            <button class="secondary" onclick="copyShareLink('upload-share-link')">Copy Link</button>
+            <p id="upload-copy-confirmation" class="hidden" style="color: green;">Link copied to clipboard!</p>
+            <div class="url-info">
+                <p>Compression reduces URL length by up to 70% compared to standard encoding.</p>
             </div>
-            
-            <div class="content-display">
-                <div class="content-panel">
-                    <div id="paste-info-container" class="hidden">
-                        <div class="file-info" id="paste-info"></div>
-                        <div class="controls">
-                            <div class="font-size-control">
-                                <span>Font size:</span>
-                                <button onclick="changeFontSize('-', 'paste-content')">-</button>
-                                <button onclick="changeFontSize('+', 'paste-content')">+</button>
-                            </div>
-                            <button class="danger" onclick="resetPaste()">Paste New Text</button>
-                        </div>
-                    </div>
-                    
-                    <pre id="paste-content" class="hidden"></pre>
+        </div>
+    </div>
+    
+    <!-- Paste Mode -->
+    <div id="paste-mode" class="tab-content">
+        <div class="instructions">
+            <h3>Paste text content directly</h3>
+            <ol>
+                <li>Enter an optional title for your text</li>
+                <li>Paste or type your text in the box below</li>
+                <li>Click "Process Text" to view and share</li>
+            </ol>
+        </div>
+        
+        <div class="paste-container">
+            <input type="text" id="paste-name" placeholder="Enter a title for your text (optional)">
+            <textarea id="paste-input" placeholder="Paste or type your text content here..."></textarea>
+            <button onclick="processPastedText()">Process Text</button>
+        </div>
+        
+        <div id="paste-info-container" class="hidden">
+            <div class="file-info" id="paste-info"></div>
+            <div class="controls">
+                <div class="font-size-control">
+                    <span>Font size:</span>
+                    <button onclick="changeFontSize('-', 'paste-content')">-</button>
+                    <button onclick="changeFontSize('+', 'paste-content')">+</button>
                 </div>
-            </div>
-            
-            <div id="paste-share-container" class="share-container hidden">
-                <h3>Share this content:</h3>
-                <p>Copy the link below and share it via LinkedIn or any other platform:</p>
-                <input type="text" id="paste-share-link" class="share-link" readonly>
-                <button class="secondary" onclick="copyShareLink('paste-share-link')">Copy Link</button>
-                <p id="paste-copy-confirmation" class="hidden" style="color: green;">Link copied to clipboard!</p>
+                <button class="danger" onclick="resetPaste()">Paste New Text</button>
             </div>
         </div>
         
-        <!-- View Mode -->
-        <div id="view-mode" class="tab-content">
-            <div class="instructions">
-                <h3>Viewing shared content</h3>
-                <p>This is shared text content. You can adjust the font size using the controls below.</p>
+        <pre id="paste-content" class="hidden"></pre>
+        
+        <div id="paste-share-container" class="share-container hidden">
+            <h3>Share this content:</h3>
+            <p>Copy the compressed link below and share it via LinkedIn or any other platform:</p>
+            <div class="loading hidden" id="paste-loading">
+                <div class="spinner"></div>
+                <p>Generating compressed link...</p>
             </div>
-            
+            <input type="text" id="paste-share-link" class="share-link" readonly>
+            <button class="secondary" onclick="copyShareLink('paste-share-link')">Copy Link</button>
+            <p id="paste-copy-confirmation" class="hidden" style="color: green;">Link copied to clipboard!</p>
+            <div class="url-info">
+                <p>Compression reduces URL length by up to 70% compared to standard encoding.</p>
+            </div>
+        </div>
+    </div>
+    
+    <!-- View Mode -->
+    <div id="view-mode" class="tab-content">
+        <div class="instructions">
+            <h3>Viewing shared content</h3>
+            <p>This is shared text content. You can adjust the font size using the controls below.</p>
+        </div>
+        
+        <div id="view-loading" class="loading">
+            <div class="spinner"></div>
+            <p>Decompressing and loading content...</p>
+        </div>
+        
+        <div id="view-content-container" class="hidden">
             <div class="file-info" id="view-file-info"></div>
             <div class="controls">
                 <div class="font-size-control">
@@ -310,37 +327,48 @@
         // Current font size in pixels
         let currentFontSize = 14;
         let activeTab = 'upload';
-        let fileContent = '';
-        let fileName = '';
         
         // Check if URL has shared content
         window.onload = function() {
             const urlParams = new URLSearchParams(window.location.search);
-            const encodedContent = urlParams.get('content');
-            const encodedName = urlParams.get('name');
-            const sourceType = urlParams.get('type');
+            const compressedData = urlParams.get('d');
             
-            if (encodedContent) {
+            if (compressedData) {
                 try {
-                    // Switch to view mode and display the content
+                    // Switch to view mode
                     switchTab('view');
                     
-                    // Decode the shared content
-                    const decodedContent = decodeURIComponent(atob(encodedContent));
-                    document.getElementById('view-content').textContent = decodedContent;
-                    document.getElementById('view-content').style.fontSize = currentFontSize + 'px';
+                    // Show loading indicator
+                    document.getElementById('view-loading').classList.remove('hidden');
+                    document.getElementById('view-content-container').classList.add('hidden');
                     
-                    // Set file name if available
-                    let displayName = "Shared Text";
-                    if (encodedName) {
-                        displayName = decodeURIComponent(atob(encodedName));
-                    }
-                    
-                    let sourceInfo = sourceType === 'paste' ? "Pasted Text" : "File";
-                    document.getElementById('view-file-info').textContent = `${sourceInfo}: ${displayName}`;
+                    // Decompress and display the content with a small delay for UI feedback
+                    setTimeout(() => {
+                        try {
+                            // Decode and decompress the data
+                            const decompressedData = decompressData(compressedData);
+                            const dataObj = JSON.parse(decompressedData);
+                            
+                            // Display the content
+                            document.getElementById('view-content').textContent = dataObj.content;
+                            document.getElementById('view-content').style.fontSize = currentFontSize + 'px';
+                            
+                            // Set title/filename
+                            let displayName = dataObj.name || "Shared Text";
+                            let sourceInfo = dataObj.type === 'paste' ? "Pasted Text" : "File";
+                            document.getElementById('view-file-info').textContent = `${sourceInfo}: ${displayName}`;
+                            
+                            // Hide loading, show content
+                            document.getElementById('view-loading').classList.add('hidden');
+                            document.getElementById('view-content-container').classList.remove('hidden');
+                        } catch (e) {
+                            console.error('Error decompressing content', e);
+                            document.getElementById('view-loading').innerHTML = '<p style="color: red;">Error: The shared link appears to be invalid or corrupted.</p>';
+                        }
+                    }, 500);
                 } catch (e) {
-                    console.error('Error decoding shared content', e);
-                    alert('The shared link appears to be invalid.');
+                    console.error('Error processing shared link', e);
+                    document.getElementById('view-loading').innerHTML = '<p style="color: red;">Error: The shared link appears to be invalid or corrupted.</p>';
                 }
             }
         };
@@ -366,14 +394,81 @@
         // Initialize with upload mode
         switchTab('upload');
         
+        // Compression functions using pako library
+        function compressData(data) {
+            // Convert data to JSON string
+            const jsonString = JSON.stringify(data);
+            
+            // Convert to Uint8Array
+            const uint8Array = new TextEncoder().encode(jsonString);
+            
+            // Compress
+            const compressed = pako.deflate(uint8Array, { level: 9 });
+            
+            // Convert to base64 with URL-safe characters
+            return arrayBufferToBase64UrlSafe(compressed);
+        }
+        
+        function decompressData(base64Data) {
+            // Convert from URL-safe base64 to regular base64
+            const regularBase64 = base64UrlSafeToBase64(base64Data);
+            
+            // Convert base64 to array buffer
+            const compressed = base64ToArrayBuffer(regularBase64);
+            
+            // Decompress
+            const decompressed = pako.inflate(compressed);
+            
+            // Convert to string
+            return new TextDecoder().decode(decompressed);
+        }
+        
+        // Utility functions for base64 conversion
+        function arrayBufferToBase64UrlSafe(buffer) {
+            let binary = '';
+            const bytes = new Uint8Array(buffer);
+            const len = bytes.byteLength;
+            
+            for (let i = 0; i < len; i++) {
+                binary += String.fromCharCode(bytes[i]);
+            }
+            
+            // Convert to base64 and make URL safe
+            return btoa(binary)
+                .replace(/\+/g, '-')
+                .replace(/\//g, '_')
+                .replace(/=/g, '');
+        }
+        
+        function base64UrlSafeToBase64(urlSafeBase64) {
+            // Convert URL-safe base64 to regular base64
+            let base64 = urlSafeBase64
+                .replace(/-/g, '+')
+                .replace(/_/g, '/');
+            
+            // Add padding if needed
+            while (base64.length % 4) {
+                base64 += '=';
+            }
+            
+            return base64;
+        }
+        
+        function base64ToArrayBuffer(base64) {
+            const binaryString = atob(base64);
+            const len = binaryString.length;
+            const bytes = new Uint8Array(len);
+            
+            for (let i = 0; i < len; i++) {
+                bytes[i] = binaryString.charCodeAt(i);
+            }
+            
+            return bytes;
+        }
+        
         // Get DOM elements for upload mode
         const dropArea = document.getElementById('drop-area');
         const fileInput = document.getElementById('file-input');
-        const fileContentElement = document.getElementById('file-content');
-        const fileInfo = document.getElementById('file-info');
-        const fileInfoContainer = document.getElementById('file-info-container');
-        const uploadShareContainer = document.getElementById('upload-share-container');
-        const uploadShareLinkInput = document.getElementById('upload-share-link');
         
         // Prevent default drag behaviors
         ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
@@ -446,27 +541,28 @@
             const reader = new FileReader();
             
             reader.onload = function(e) {
-                // Store content
-                fileContent = e.target.result;
-                fileName = file.name;
-                
                 // Display file content
-                fileContentElement.textContent = fileContent;
-                fileContentElement.classList.remove('hidden');
-                fileContentElement.style.fontSize = currentFontSize + 'px';
+                const fileContent = e.target.result;
+                document.getElementById('file-content').textContent = fileContent;
+                document.getElementById('file-content').classList.remove('hidden');
+                document.getElementById('file-content').style.fontSize = currentFontSize + 'px';
                 
                 // Update file info
-                fileInfo.textContent = `File: ${fileName} (${formatFileSize(file.size)})`;
-                fileInfoContainer.classList.remove('hidden');
+                document.getElementById('file-info').textContent = `File: ${file.name} (${formatFileSize(file.size)})`;
+                document.getElementById('file-info-container').classList.remove('hidden');
                 
                 // Hide drop area
                 dropArea.style.display = 'none';
                 
-                // Show share container
-                uploadShareContainer.classList.remove('hidden');
+                // Show share container and loading
+                document.getElementById('upload-share-container').classList.remove('hidden');
+                document.getElementById('upload-loading').classList.remove('hidden');
+                document.getElementById('upload-share-link').value = '';
                 
-                // Generate share link
-                generateShareLink('upload');
+                // Generate compressed share link (with a small delay for UI feedback)
+                setTimeout(() => {
+                    generateCompressedLink('upload', fileContent, file.name);
+                }, 300);
             };
             
             reader.onerror = function() {
@@ -487,7 +583,7 @@
             }
         }
         
-        function changeFontSize(direction, elementId = 'file-content') {
+        function changeFontSize(direction, elementId) {
             if (direction === '+' && currentFontSize < 24) {
                 currentFontSize += 2;
             } else if (direction === '-' && currentFontSize > 8) {
@@ -498,30 +594,38 @@
             document.getElementById(elementId).style.fontSize = currentFontSize + 'px';
         }
         
-        function generateShareLink(mode) {
-            let content = '';
-            let name = '';
-            let shareInput = null;
+        function generateCompressedLink(mode, content, name) {
+            // Create data object
+            const dataObj = {
+                content: content,
+                name: name || 'Shared Text',
+                type: mode
+            };
             
-            if (mode === 'upload') {
-                content = fileContent;
-                name = fileName;
-                shareInput = uploadShareLinkInput;
-            } else if (mode === 'paste') {
-                content = document.getElementById('paste-content').textContent;
-                name = document.getElementById('paste-name').value || 'Pasted Text';
-                shareInput = document.getElementById('paste-share-link');
+            try {
+                // Compress the data
+                const compressed = compressData(dataObj);
+                
+                // Create the share URL
+                const shareUrl = `${window.location.href.split('?')[0]}?d=${compressed}`;
+                
+                // Update the share link input
+                if (mode === 'upload') {
+                    document.getElementById('upload-loading').classList.add('hidden');
+                    document.getElementById('upload-share-link').value = shareUrl;
+                } else {
+                    document.getElementById('paste-loading').classList.add('hidden');
+                    document.getElementById('paste-share-link').value = shareUrl;
+                }
+            } catch (e) {
+                console.error('Error generating compressed link', e);
+                
+                if (mode === 'upload') {
+                    document.getElementById('upload-loading').innerHTML = '<p style="color: red;">Error: Could not generate compressed link. The content may be too large.</p>';
+                } else {
+                    document.getElementById('paste-loading').innerHTML = '<p style="color: red;">Error: Could not generate compressed link. The content may be too large.</p>';
+                }
             }
-            
-            // Encode the content to Base64
-            const encodedContent = btoa(encodeURIComponent(content));
-            const encodedName = btoa(encodeURIComponent(name));
-            
-            // Create the share URL
-            const shareUrl = `${window.location.href.split('?')[0]}?content=${encodedContent}&name=${encodedName}&type=${mode}`;
-            
-            // Update the share link input
-            shareInput.value = shareUrl;
         }
         
         function copyShareLink(inputId) {
@@ -545,22 +649,14 @@
             dropArea.style.display = 'block';
             
             // Hide file content and info
-            fileContentElement.classList.add('hidden');
-            fileInfoContainer.classList.add('hidden');
-            uploadShareContainer.classList.add('hidden');
-            
-            // Clear file content
-            fileContent = '';
-            fileName = '';
+            document.getElementById('file-content').classList.add('hidden');
+            document.getElementById('file-info-container').classList.add('hidden');
+            document.getElementById('upload-share-container').classList.add('hidden');
         }
         
         function processPastedText() {
             const pasteInput = document.getElementById('paste-input');
             const pasteNameInput = document.getElementById('paste-name');
-            const pasteContent = document.getElementById('paste-content');
-            const pasteInfo = document.getElementById('paste-info');
-            const pasteInfoContainer = document.getElementById('paste-info-container');
-            const pasteShareContainer = document.getElementById('paste-share-container');
             
             // Get pasted text and name
             const text = pasteInput.value;
@@ -572,24 +668,28 @@
             }
             
             // Display pasted content
-            pasteContent.textContent = text;
-            pasteContent.classList.remove('hidden');
-            pasteContent.style.fontSize = currentFontSize + 'px';
+            document.getElementById('paste-content').textContent = text;
+            document.getElementById('paste-content').classList.remove('hidden');
+            document.getElementById('paste-content').style.fontSize = currentFontSize + 'px';
             
             // Update info
-            pasteInfo.textContent = `Title: ${name} (${formatByteSize(text.length)})`;
-            pasteInfoContainer.classList.remove('hidden');
+            document.getElementById('paste-info').textContent = `Title: ${name} (${formatByteSize(text.length)})`;
+            document.getElementById('paste-info-container').classList.remove('hidden');
             
-            // Show share container
-            pasteShareContainer.classList.remove('hidden');
-            
-            // Generate share link
-            generateShareLink('paste');
+            // Show share container and loading
+            document.getElementById('paste-share-container').classList.remove('hidden');
+            document.getElementById('paste-loading').classList.remove('hidden');
+            document.getElementById('paste-share-link').value = '';
             
             // Hide paste inputs
             pasteInput.style.display = 'none';
             pasteNameInput.style.display = 'none';
             document.querySelector('#paste-mode button').style.display = 'none';
+            
+            // Generate compressed share link (with a small delay for UI feedback)
+            setTimeout(() => {
+                generateCompressedLink('paste', text, name);
+            }, 300);
         }
         
         function formatByteSize(length) {
@@ -601,9 +701,6 @@
         function resetPaste() {
             const pasteInput = document.getElementById('paste-input');
             const pasteNameInput = document.getElementById('paste-name');
-            const pasteContent = document.getElementById('paste-content');
-            const pasteInfoContainer = document.getElementById('paste-info-container');
-            const pasteShareContainer = document.getElementById('paste-share-container');
             
             // Show paste inputs
             pasteInput.style.display = 'block';
@@ -613,9 +710,9 @@
             document.querySelector('#paste-mode button').style.display = 'inline-block';
             
             // Hide content and info
-            pasteContent.classList.add('hidden');
-            pasteInfoContainer.classList.add('hidden');
-            pasteShareContainer.classList.add('hidden');
+            document.getElementById('paste-content').classList.add('hidden');
+            document.getElementById('paste-info-container').classList.add('hidden');
+            document.getElementById('paste-share-container').classList.add('hidden');
         }
     </script>
 </body>

@@ -3,8 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Text Viewer with Compressed URLs</title>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/pako/2.1.0/pako.min.js"></script>
+    <title>Text Viewer (8000 Character Limit)</title>
     <style>
         body {
             font-family: Arial, sans-serif;
@@ -142,10 +141,20 @@
             border-radius: 5px;
             border: 1px solid #c8e6c9;
         }
+        .share-links {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            margin: 15px 0;
+        }
+        .share-link-item {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
         .share-link {
-            width: 100%;
+            flex-grow: 1;
             padding: 10px;
-            margin: 10px 0;
             border: 1px solid #ddd;
             border-radius: 4px;
             box-sizing: border-box;
@@ -164,8 +173,9 @@
         .instructions ol {
             margin-bottom: 0;
         }
-        .url-info {
-            background-color: #fff9c4;
+        .warning {
+            background-color: #fff3cd;
+            color: #856404;
             padding: 10px;
             border-radius: 4px;
             margin-top: 10px;
@@ -192,10 +202,31 @@
             0% { transform: rotate(0deg); }
             100% { transform: rotate(360deg); }
         }
+        .chunks-container {
+            margin: 15px 0;
+            padding: 10px;
+            background-color: #f5f5f5;
+            border-radius: 5px;
+            border: 1px solid #ddd;
+        }
+        .chunks-info {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 10px;
+        }
+        .chunks-nav {
+            display: flex;
+            gap: 5px;
+        }
+        .chunks-nav button {
+            padding: 5px 10px;
+            font-size: 14px;
+        }
     </style>
 </head>
 <body>
-    <h1>Text Viewer with Compressed URLs</h1>
+    <h1>Text Viewer (8000 Character Limit)</h1>
     
     <div class="tabs">
         <div class="tab" id="tab-upload" onclick="switchTab('upload')">Upload Mode</div>
@@ -210,7 +241,7 @@
             <ol>
                 <li>Drag and drop a text file or click "Browse"</li>
                 <li>View the file content below</li>
-                <li>Generate a compressed share link to share via LinkedIn</li>
+                <li>For large files, multiple share links will be generated (8000 character limit per link)</li>
             </ol>
         </div>
         
@@ -236,16 +267,26 @@
         
         <div id="upload-share-container" class="share-container hidden">
             <h3>Share this content:</h3>
-            <p>Copy the compressed link below and share it via LinkedIn or any other platform:</p>
+            <div id="upload-single-link" class="hidden">
+                <p>Copy the link below and share it via LinkedIn:</p>
+                <div class="share-link-item">
+                    <input type="text" id="upload-share-link" class="share-link" readonly>
+                    <button class="secondary" onclick="copyShareLink('upload-share-link')">Copy</button>
+                </div>
+                <p id="upload-copy-confirmation" class="hidden" style="color: green;">Link copied to clipboard!</p>
+            </div>
+            
+            <div id="upload-multi-link" class="hidden">
+                <p>Due to the size of the content, multiple links have been generated:</p>
+                <div id="upload-share-links" class="share-links"></div>
+                <div class="warning">
+                    <p><strong>Note:</strong> Share all links in order. The recipient will need to view all chunks to see the complete content.</p>
+                </div>
+            </div>
+            
             <div class="loading hidden" id="upload-loading">
                 <div class="spinner"></div>
-                <p>Generating compressed link...</p>
-            </div>
-            <input type="text" id="upload-share-link" class="share-link" readonly>
-            <button class="secondary" onclick="copyShareLink('upload-share-link')">Copy Link</button>
-            <p id="upload-copy-confirmation" class="hidden" style="color: green;">Link copied to clipboard!</p>
-            <div class="url-info">
-                <p>Compression reduces URL length by up to 70% compared to standard encoding.</p>
+                <p>Generating links...</p>
             </div>
         </div>
     </div>
@@ -258,6 +299,7 @@
                 <li>Enter an optional title for your text</li>
                 <li>Paste or type your text in the box below</li>
                 <li>Click "Process Text" to view and share</li>
+                <li>For large text, multiple share links will be generated (8000 character limit per link)</li>
             </ol>
         </div>
         
@@ -283,16 +325,26 @@
         
         <div id="paste-share-container" class="share-container hidden">
             <h3>Share this content:</h3>
-            <p>Copy the compressed link below and share it via LinkedIn or any other platform:</p>
+            <div id="paste-single-link" class="hidden">
+                <p>Copy the link below and share it via LinkedIn:</p>
+                <div class="share-link-item">
+                    <input type="text" id="paste-share-link" class="share-link" readonly>
+                    <button class="secondary" onclick="copyShareLink('paste-share-link')">Copy</button>
+                </div>
+                <p id="paste-copy-confirmation" class="hidden" style="color: green;">Link copied to clipboard!</p>
+            </div>
+            
+            <div id="paste-multi-link" class="hidden">
+                <p>Due to the size of the content, multiple links have been generated:</p>
+                <div id="paste-share-links" class="share-links"></div>
+                <div class="warning">
+                    <p><strong>Note:</strong> Share all links in order. The recipient will need to view all chunks to see the complete content.</p>
+                </div>
+            </div>
+            
             <div class="loading hidden" id="paste-loading">
                 <div class="spinner"></div>
-                <p>Generating compressed link...</p>
-            </div>
-            <input type="text" id="paste-share-link" class="share-link" readonly>
-            <button class="secondary" onclick="copyShareLink('paste-share-link')">Copy Link</button>
-            <p id="paste-copy-confirmation" class="hidden" style="color: green;">Link copied to clipboard!</p>
-            <div class="url-info">
-                <p>Compression reduces URL length by up to 70% compared to standard encoding.</p>
+                <p>Generating links...</p>
             </div>
         </div>
     </div>
@@ -306,11 +358,25 @@
         
         <div id="view-loading" class="loading">
             <div class="spinner"></div>
-            <p>Decompressing and loading content...</p>
+            <p>Loading content...</p>
         </div>
         
         <div id="view-content-container" class="hidden">
             <div class="file-info" id="view-file-info"></div>
+            
+            <div id="chunks-navigation" class="chunks-container hidden">
+                <div class="chunks-info">
+                    <span id="chunk-indicator">Chunk <span id="current-chunk">1</span> of <span id="total-chunks">1</span></span>
+                    <div class="chunks-nav">
+                        <button id="prev-chunk" onclick="navigateChunks(-1)" disabled>Previous</button>
+                        <button id="next-chunk" onclick="navigateChunks(1)">Next</button>
+                    </div>
+                </div>
+                <div class="warning">
+                    <p><strong>Note:</strong> This is part of a multi-chunk document. Use the navigation buttons to view all content.</p>
+                </div>
+            </div>
+            
             <div class="controls">
                 <div class="font-size-control">
                     <span>Font size:</span>
@@ -328,12 +394,21 @@
         let currentFontSize = 14;
         let activeTab = 'upload';
         
+        // Maximum URL length
+        const MAX_URL_LENGTH = 7800; // Keeping slightly under 8000 for safety
+        
         // Check if URL has shared content
         window.onload = function() {
             const urlParams = new URLSearchParams(window.location.search);
-            const compressedData = urlParams.get('d');
+            const dataParam = urlParams.get('d');
+            const chunkParam = urlParams.get('chunk');
+            const totalParam = urlParams.get('total');
             
-            if (compressedData) {
+            // Chunk information
+            const currentChunk = chunkParam ? parseInt(chunkParam) : 1;
+            const totalChunks = totalParam ? parseInt(totalParam) : 1;
+            
+            if (dataParam) {
                 try {
                     // Switch to view mode
                     switchTab('view');
@@ -342,12 +417,12 @@
                     document.getElementById('view-loading').classList.remove('hidden');
                     document.getElementById('view-content-container').classList.add('hidden');
                     
-                    // Decompress and display the content with a small delay for UI feedback
+                    // Process with a slight delay for UI feedback
                     setTimeout(() => {
                         try {
-                            // Decode and decompress the data
-                            const decompressedData = decompressData(compressedData);
-                            const dataObj = JSON.parse(decompressedData);
+                            // Decode data
+                            const decodedData = atob(dataParam);
+                            const dataObj = JSON.parse(decodedData);
                             
                             // Display the content
                             document.getElementById('view-content').textContent = dataObj.content;
@@ -358,20 +433,50 @@
                             let sourceInfo = dataObj.type === 'paste' ? "Pasted Text" : "File";
                             document.getElementById('view-file-info').textContent = `${sourceInfo}: ${displayName}`;
                             
+                            // Setup chunk navigation if needed
+                            if (totalChunks > 1) {
+                                document.getElementById('chunks-navigation').classList.remove('hidden');
+                                document.getElementById('current-chunk').textContent = currentChunk;
+                                document.getElementById('total-chunks').textContent = totalChunks;
+                                
+                                // Update navigation buttons
+                                document.getElementById('prev-chunk').disabled = (currentChunk <= 1);
+                                document.getElementById('next-chunk').disabled = (currentChunk >= totalChunks);
+                                
+                                // Store chunk info in sessionStorage (for navigation)
+                                sessionStorage.setItem('current-chunk', currentChunk);
+                                sessionStorage.setItem('total-chunks', totalChunks);
+                                sessionStorage.setItem('base-url', window.location.href.split('?')[0]);
+                                sessionStorage.setItem('content-name', displayName);
+                                sessionStorage.setItem('content-type', dataObj.type);
+                            }
+                            
                             // Hide loading, show content
                             document.getElementById('view-loading').classList.add('hidden');
                             document.getElementById('view-content-container').classList.remove('hidden');
                         } catch (e) {
-                            console.error('Error decompressing content', e);
+                            console.error('Error decoding content', e);
                             document.getElementById('view-loading').innerHTML = '<p style="color: red;">Error: The shared link appears to be invalid or corrupted.</p>';
                         }
-                    }, 500);
+                    }, 300);
                 } catch (e) {
                     console.error('Error processing shared link', e);
                     document.getElementById('view-loading').innerHTML = '<p style="color: red;">Error: The shared link appears to be invalid or corrupted.</p>';
                 }
             }
         };
+        
+        function navigateChunks(direction) {
+            const currentChunk = parseInt(sessionStorage.getItem('current-chunk'));
+            const totalChunks = parseInt(sessionStorage.getItem('total-chunks'));
+            const baseUrl = sessionStorage.getItem('base-url');
+            const newChunk = currentChunk + direction;
+            
+            if (newChunk < 1 || newChunk > totalChunks) return;
+            
+            // Navigate to the new chunk
+            window.location.href = `${baseUrl}?chunk=${newChunk}&total=${totalChunks}`;
+        }
         
         function switchTab(tab) {
             activeTab = tab;
@@ -393,78 +498,6 @@
         
         // Initialize with upload mode
         switchTab('upload');
-        
-        // Compression functions using pako library
-        function compressData(data) {
-            // Convert data to JSON string
-            const jsonString = JSON.stringify(data);
-            
-            // Convert to Uint8Array
-            const uint8Array = new TextEncoder().encode(jsonString);
-            
-            // Compress
-            const compressed = pako.deflate(uint8Array, { level: 9 });
-            
-            // Convert to base64 with URL-safe characters
-            return arrayBufferToBase64UrlSafe(compressed);
-        }
-        
-        function decompressData(base64Data) {
-            // Convert from URL-safe base64 to regular base64
-            const regularBase64 = base64UrlSafeToBase64(base64Data);
-            
-            // Convert base64 to array buffer
-            const compressed = base64ToArrayBuffer(regularBase64);
-            
-            // Decompress
-            const decompressed = pako.inflate(compressed);
-            
-            // Convert to string
-            return new TextDecoder().decode(decompressed);
-        }
-        
-        // Utility functions for base64 conversion
-        function arrayBufferToBase64UrlSafe(buffer) {
-            let binary = '';
-            const bytes = new Uint8Array(buffer);
-            const len = bytes.byteLength;
-            
-            for (let i = 0; i < len; i++) {
-                binary += String.fromCharCode(bytes[i]);
-            }
-            
-            // Convert to base64 and make URL safe
-            return btoa(binary)
-                .replace(/\+/g, '-')
-                .replace(/\//g, '_')
-                .replace(/=/g, '');
-        }
-        
-        function base64UrlSafeToBase64(urlSafeBase64) {
-            // Convert URL-safe base64 to regular base64
-            let base64 = urlSafeBase64
-                .replace(/-/g, '+')
-                .replace(/_/g, '/');
-            
-            // Add padding if needed
-            while (base64.length % 4) {
-                base64 += '=';
-            }
-            
-            return base64;
-        }
-        
-        function base64ToArrayBuffer(base64) {
-            const binaryString = atob(base64);
-            const len = binaryString.length;
-            const bytes = new Uint8Array(len);
-            
-            for (let i = 0; i < len; i++) {
-                bytes[i] = binaryString.charCodeAt(i);
-            }
-            
-            return bytes;
-        }
         
         // Get DOM elements for upload mode
         const dropArea = document.getElementById('drop-area');
@@ -557,11 +590,10 @@
                 // Show share container and loading
                 document.getElementById('upload-share-container').classList.remove('hidden');
                 document.getElementById('upload-loading').classList.remove('hidden');
-                document.getElementById('upload-share-link').value = '';
                 
-                // Generate compressed share link (with a small delay for UI feedback)
+                // Generate share links (with a small delay for UI feedback)
                 setTimeout(() => {
-                    generateCompressedLink('upload', fileContent, file.name);
+                    generateShareLinks('upload', fileContent, file.name);
                 }, 300);
             };
             
@@ -594,37 +626,130 @@
             document.getElementById(elementId).style.fontSize = currentFontSize + 'px';
         }
         
-        function generateCompressedLink(mode, content, name) {
-            // Create data object
-            const dataObj = {
-                content: content,
+        function splitContentIntoChunks(content, maxSize) {
+            // Split content into chunks that will result in URLs under the MAX_URL_LENGTH
+            const chunks = [];
+            let currentChunk = '';
+            
+            // Split the content by lines to avoid breaking in the middle of a line if possible
+            const lines = content.split('\n');
+            
+            for (let i = 0; i < lines.length; i++) {
+                const line = lines[i] + (i < lines.length - 1 ? '\n' : '');
+                
+                // Check if adding this line would exceed the max size
+                const potentialChunk = currentChunk + line;
+                const encodedSize = btoa(JSON.stringify({
+                    content: potentialChunk,
+                    name: 'test',
+                    type: 'test'
+                })).length;
+                
+                // If encoded size is too large, start a new chunk
+                if (encodedSize > maxSize && currentChunk !== '') {
+                    chunks.push(currentChunk);
+                    currentChunk = line;
+                } else {
+                    currentChunk = potentialChunk;
+                }
+            }
+            
+            // Add the last chunk if it's not empty
+            if (currentChunk) {
+                chunks.push(currentChunk);
+            }
+            
+            return chunks;
+        }
+        
+        function generateShareLinks(mode, content, name) {
+            const baseUrl = window.location.href.split('?')[0];
+            const contentType = mode;
+            
+            // Calculate approximately how many characters we can have in the encoded data
+            // to stay under MAX_URL_LENGTH
+            const testObj = {
+                content: 'a'.repeat(1000),
                 name: name || 'Shared Text',
-                type: mode
+                type: contentType
             };
             
-            try {
-                // Compress the data
-                const compressed = compressData(dataObj);
+            const testEncoded = btoa(JSON.stringify(testObj));
+            const charsPerUrl = Math.floor(1000 * (MAX_URL_LENGTH / testEncoded.length));
+            
+            // Split content into chunks
+            const chunks = splitContentIntoChunks(content, charsPerUrl);
+            
+            // Generate links for each chunk
+            const shareLinks = [];
+            for (let i = 0; i < chunks.length; i++) {
+                const chunkObj = {
+                    content: chunks[i],
+                    name: name || 'Shared Text',
+                    type: contentType
+                };
                 
-                // Create the share URL
-                const shareUrl = `${window.location.href.split('?')[0]}?d=${compressed}`;
+                // Basic encoding (no compression)
+                const encodedData = btoa(JSON.stringify(chunkObj));
                 
-                // Update the share link input
-                if (mode === 'upload') {
-                    document.getElementById('upload-loading').classList.add('hidden');
-                    document.getElementById('upload-share-link').value = shareUrl;
-                } else {
-                    document.getElementById('paste-loading').classList.add('hidden');
-                    document.getElementById('paste-share-link').value = shareUrl;
-                }
-            } catch (e) {
-                console.error('Error generating compressed link', e);
+                // Create URL with chunk information
+                const url = `${baseUrl}?d=${encodedData}&chunk=${i+1}&total=${chunks.length}`;
+                shareLinks.push(url);
+            }
+            
+            // Display links based on mode
+            if (mode === 'upload') {
+                displayShareLinks('upload', shareLinks);
+            } else {
+                displayShareLinks('paste', shareLinks);
+            }
+        }
+        
+        function displayShareLinks(mode, links) {
+            // Hide loading indicator
+            document.getElementById(`${mode}-loading`).classList.add('hidden');
+            
+            if (links.length === 1) {
+                // Single link case
+                document.getElementById(`${mode}-single-link`).classList.remove('hidden');
+                document.getElementById(`${mode}-multi-link`).classList.add('hidden');
+                document.getElementById(`${mode}-share-link`).value = links[0];
+            } else {
+                // Multiple links case
+                document.getElementById(`${mode}-single-link`).classList.add('hidden');
+                document.getElementById(`${mode}-multi-link`).classList.remove('hidden');
                 
-                if (mode === 'upload') {
-                    document.getElementById('upload-loading').innerHTML = '<p style="color: red;">Error: Could not generate compressed link. The content may be too large.</p>';
-                } else {
-                    document.getElementById('paste-loading').innerHTML = '<p style="color: red;">Error: Could not generate compressed link. The content may be too large.</p>';
-                }
+                // Generate link elements
+                const linksContainer = document.getElementById(`${mode}-share-links`);
+                linksContainer.innerHTML = '';
+                
+                links.forEach((link, index) => {
+                    const linkItem = document.createElement('div');
+                    linkItem.className = 'share-link-item';
+                    
+                    const label = document.createElement('span');
+                    label.textContent = `Part ${index+1}`;
+                    
+                    const input = document.createElement('input');
+                    input.type = 'text';
+                    input.className = 'share-link';
+                    input.value = link;
+                    input.readOnly = true;
+                    input.id = `${mode}-share-link-${index+1}`;
+                    
+                    const button = document.createElement('button');
+                    button.className = 'secondary';
+                    button.textContent = 'Copy';
+                    button.onclick = function() {
+                        copyShareLink(`${mode}-share-link-${index+1}`);
+                    };
+                    
+                    linkItem.appendChild(label);
+                    linkItem.appendChild(input);
+                    linkItem.appendChild(button);
+                    
+                    linksContainer.appendChild(linkItem);
+                });
             }
         }
         
@@ -633,12 +758,23 @@
             shareInput.select();
             document.execCommand('copy');
             
-            // Show confirmation
-            const copyConfirmation = document.getElementById(inputId.replace('link', 'copy-confirmation'));
-            copyConfirmation.classList.remove('hidden');
-            setTimeout(() => {
-                copyConfirmation.classList.add('hidden');
-            }, 3000);
+            // Show confirmation if it's a main link (not a multi-part)
+            if (inputId === 'upload-share-link' || inputId === 'paste-share-link') {
+                const confirmationId = inputId.replace('link', 'copy-confirmation');
+                const copyConfirmation = document.getElementById(confirmationId);
+                copyConfirmation.classList.remove('hidden');
+                setTimeout(() => {
+                    copyConfirmation.classList.add('hidden');
+                }, 3000);
+            } else {
+                // For multi-part links, show a temporary notification near the button
+                const button = shareInput.nextElementSibling;
+                const originalText = button.textContent;
+                button.textContent = 'Copied!';
+                setTimeout(() => {
+                    button.textContent = originalText;
+                }, 1500);
+            }
         }
         
         function resetUpload() {
@@ -676,19 +812,20 @@
             document.getElementById('paste-info').textContent = `Title: ${name} (${formatByteSize(text.length)})`;
             document.getElementById('paste-info-container').classList.remove('hidden');
             
-            // Show share container and loading
-            document.getElementById('paste-share-container').classList.remove('hidden');
-            document.getElementById('paste-loading').classList.remove('hidden');
-            document.getElementById('paste-share-link').value = '';
-            
             // Hide paste inputs
             pasteInput.style.display = 'none';
             pasteNameInput.style.display = 'none';
             document.querySelector('#paste-mode button').style.display = 'none';
             
-            // Generate compressed share link (with a small delay for UI feedback)
+            // Show
+
+// Show share container and loading
+            document.getElementById('paste-share-container').classList.remove('hidden');
+            document.getElementById('paste-loading').classList.remove('hidden');
+            
+            // Generate share links (with a small delay for UI feedback)
             setTimeout(() => {
-                generateCompressedLink('paste', text, name);
+                generateShareLinks('paste', text, name);
             }, 300);
         }
         

@@ -223,6 +223,14 @@
             padding: 5px 10px;
             font-size: 14px;
         }
+        .error-message {
+            color: #d32f2f;
+            background-color: #ffebee;
+            padding: 10px;
+            border-radius: 4px;
+            margin-top: 10px;
+            border: 1px solid #ffcdd2;
+        }
     </style>
 </head>
 <body>
@@ -456,12 +464,12 @@
                             document.getElementById('view-content-container').classList.remove('hidden');
                         } catch (e) {
                             console.error('Error decoding content', e);
-                            document.getElementById('view-loading').innerHTML = '<p style="color: red;">Error: The shared link appears to be invalid or corrupted.</p>';
+                            document.getElementById('view-loading').innerHTML = '<p class="error-message">Error: The shared link appears to be invalid or corrupted.</p>';
                         }
                     }, 300);
                 } catch (e) {
                     console.error('Error processing shared link', e);
-                    document.getElementById('view-loading').innerHTML = '<p style="color: red;">Error: The shared link appears to be invalid or corrupted.</p>';
+                    document.getElementById('view-loading').innerHTML = '<p class="error-message">Error: The shared link appears to be invalid or corrupted.</p>';
                 }
             }
         };
@@ -626,130 +634,212 @@
             document.getElementById(elementId).style.fontSize = currentFontSize + 'px';
         }
         
+        // FIXED: splitContentIntoChunks function with better error handling
         function splitContentIntoChunks(content, maxSize) {
-            // Split content into chunks that will result in URLs under the MAX_URL_LENGTH
-            const chunks = [];
-            let currentChunk = '';
-            
-            // Split the content by lines to avoid breaking in the middle of a line if possible
-            const lines = content.split('\n');
-            
-            for (let i = 0; i < lines.length; i++) {
-                const line = lines[i] + (i < lines.length - 1 ? '\n' : '');
+            try {
+                // Split content into chunks that will result in URLs under the MAX_URL_LENGTH
+                const chunks = [];
+                let currentChunk = '';
                 
-                // Check if adding this line would exceed the max size
-                const potentialChunk = currentChunk + line;
-                const encodedSize = btoa(JSON.stringify({
-                    content: potentialChunk,
-                    name: 'test',
-                    type: 'test'
-                })).length;
+                // Split the content by lines to avoid breaking in the middle of a line if possible
+                const lines = content.split('\n');
                 
-                // If encoded size is too large, start a new chunk
-                if (encodedSize > maxSize && currentChunk !== '') {
-                    chunks.push(currentChunk);
-                    currentChunk = line;
-                } else {
-                    currentChunk = potentialChunk;
+                for (let i = 0; i < lines.length; i++) {
+                    const line = lines[i] + (i < lines.length - 1 ? '\n' : '');
+                    
+                    // Check if adding this line would exceed the max size
+                    const potentialChunk = currentChunk + line;
+                    
+                    // Use a try-catch to handle any encoding errors
+                    try {
+                        const encodedSize = btoa(JSON.stringify({
+                            content: potentialChunk,
+                            name: 'test',
+                            type: 'test'
+                        })).length;
+                        
+                        // If encoded size is too large, start a new chunk
+                        if (encodedSize > maxSize && currentChunk !== '') {
+                            chunks.push(currentChunk);
+                            currentChunk = line;
+                        } else {
+                            currentChunk = potentialChunk;
+                        }
+                    } catch (e) {
+                        // If there's an error encoding, just add the current chunk and start a new one
+                        if (currentChunk !== '') {
+                            chunks.push(currentChunk);
+                        }
+                        currentChunk = line;
+                        console.error("Error during chunk encoding:", e);
+                    }
+                    
+                    // Safety check - don't let loop run too long
+                    if (chunks.length > 100) {
+                        console.error("Too many chunks created, stopping process");
+                        break;
+                    }
                 }
+                
+                // Add the last chunk if it's not empty
+                if (currentChunk) {
+                    chunks.push(currentChunk);
+                }
+                
+                return chunks;
+            } catch (e) {
+                console.error("Error in splitContentIntoChunks:", e);
+                // Return at least one chunk to prevent errors
+                return [content.substring(0, 1000)];
             }
-            
-            // Add the last chunk if it's not empty
-            if (currentChunk) {
-                chunks.push(currentChunk);
-            }
-            
-            return chunks;
         }
         
+        // FIXED: generateShareLinks function with proper error handling
         function generateShareLinks(mode, content, name) {
-            const baseUrl = window.location.href.split('?')[0];
-            const contentType = mode;
-            
-            // Calculate approximately how many characters we can have in the encoded data
-            // to stay under MAX_URL_LENGTH
-            const testObj = {
-                content: 'a'.repeat(1000),
-                name: name || 'Shared Text',
-                type: contentType
-            };
-            
-            const testEncoded = btoa(JSON.stringify(testObj));
-            const charsPerUrl = Math.floor(1000 * (MAX_URL_LENGTH / testEncoded.length));
-            
-            // Split content into chunks
-            const chunks = splitContentIntoChunks(content, charsPerUrl);
-            
-            // Generate links for each chunk
-            const shareLinks = [];
-            for (let i = 0; i < chunks.length; i++) {
-                const chunkObj = {
-                    content: chunks[i],
+            try {
+                const baseUrl = window.location.href.split('?')[0];
+                const contentType = mode;
+                
+                // Calculate approximately how many characters we can have in the encoded data
+                // to stay under MAX_URL_LENGTH
+                
+                // Use a smaller test string for calculation
+                const testObj = {
+                    content: 'a'.repeat(100),
                     name: name || 'Shared Text',
                     type: contentType
                 };
                 
-                // Basic encoding (no compression)
-                const encodedData = btoa(JSON.stringify(chunkObj));
-                
-                // Create URL with chunk information
-                const url = `${baseUrl}?d=${encodedData}&chunk=${i+1}&total=${chunks.length}`;
-                shareLinks.push(url);
-            }
-            
-            // Display links based on mode
-            if (mode === 'upload') {
-                displayShareLinks('upload', shareLinks);
-            } else {
-                displayShareLinks('paste', shareLinks);
+                try {
+                    const testEncoded = btoa(JSON.stringify(testObj));
+                    // Calculate safe chunk size - be conservative
+                    const bytesPerChar = testEncoded.length / 100;
+                    const safeCharsPerUrl = Math.floor((MAX_URL_LENGTH / bytesPerChar) * 0.8); // 80% safety margin
+                    
+                    // Split content into chunks with a reasonable limit
+                    const maxContentLength = 1000000; // 1M chars max
+                    const truncatedContent = content.length > maxContentLength ? 
+                        content.substring(0, maxContentLength) + "\n\n[Content truncated due to size limits]" : 
+                        content;
+                    
+                    const chunks = splitContentIntoChunks(truncatedContent, safeCharsPerUrl);
+                    
+                    // Generate links for each chunk
+                    const shareLinks = [];
+                    for (let i = 0; i < chunks.length; i++) {
+                        try {
+                            const chunkObj = {
+                                content: chunks[i],
+                                name: name || 'Shared Text',
+                                type: contentType
+                            };
+                            
+                            // Basic encoding (no compression)
+                            const encodedData = btoa(JSON.stringify(chunkObj));
+                            
+                            // Create URL with chunk information
+                            const url = `${baseUrl}?d=${encodedData}&chunk=${i+1}&total=${chunks.length}`;
+                            shareLinks.push(url);
+                        } catch (e) {
+                            console.error(`Error encoding chunk ${i+1}:`, e);
+                            // Add a placeholder for failed chunks
+                            shareLinks.push(`${baseUrl}?error=encoding_failed&chunk=${i+1}&total=${chunks.length}`);
+                        }
+                    }
+                    
+                    // Display links based on mode
+                    if (mode === 'upload') {
+                        displayShareLinks('upload', shareLinks);
+                    } else {
+                        displayShareLinks('paste', shareLinks);
+                    }
+                } catch (e) {
+                    console.error("Error encoding test object:", e);
+                    // Show error to user
+                    displayGenerationError(mode);
+                }
+            } catch (e) {
+                console.error("Error in generateShareLinks:", e);
+                // Show error to user
+                displayGenerationError(mode);
             }
         }
         
-        function displayShareLinks(mode, links) {
+        // NEW: Add a function to handle errors in link generation
+        function displayGenerationError(mode) {
             // Hide loading indicator
             document.getElementById(`${mode}-loading`).classList.add('hidden');
             
-            if (links.length === 1) {
-                // Single link case
-                document.getElementById(`${mode}-single-link`).classList.remove('hidden');
-                document.getElementById(`${mode}-multi-link`).classList.add('hidden');
-                document.getElementById(`${mode}-share-link`).value = links[0];
-            } else {
-                // Multiple links case
-                document.getElementById(`${mode}-single-link`).classList.add('hidden');
-                document.getElementById(`${mode}-multi-link`).classList.remove('hidden');
+            // Show error message
+            const loadingElement = document.getElementById(`${mode}-loading`);
+            loadingElement.innerHTML = '<p class="error-message">Error generating share links. The content may be too large or contain invalid characters.</p>';
+            loadingElement.classList.remove('hidden');
+        }
+        
+        // FIXED: displayShareLinks function with error handling
+        function displayShareLinks(mode, links) {
+            try {
+                // Hide loading indicator
+                document.getElementById(`${mode}-loading`).classList.add('hidden');
                 
-                // Generate link elements
-                const linksContainer = document.getElementById(`${mode}-share-links`);
-                linksContainer.innerHTML = '';
+                if (!links || links.length === 0) {
+                    displayGenerationError(mode);
+                    return;
+                }
                 
-                links.forEach((link, index) => {
-                    const linkItem = document.createElement('div');
-                    linkItem.className = 'share-link-item';
+                if (links.length === 1) {
+                    // Single link case
+                    document.getElementById(`${mode}-single-link`).classList.remove('hidden');
+                    document.getElementById(`${mode}-multi-link`).classList.add('hidden');
+                    document.getElementById(`${mode}-share-link`).value = links[0];
+                } else {
+                    // Multiple links case
+                    document.getElementById(`${mode}-single-link`).classList.add('hidden');
+                    document.getElementById(`${mode}-multi-link`).classList.remove('hidden');
                     
-                    const label = document.createElement('span');
-                    label.textContent = `Part ${index+1}`;
+                    // Generate link elements
+                    const linksContainer = document.getElementById(`${mode}-share-links`);
+                    linksContainer.innerHTML = '';
                     
-                    const input = document.createElement('input');
-                    input.type = 'text';
-                    input.className = 'share-link';
-                    input.value = link;
-                    input.readOnly = true;
-                    input.id = `${mode}-share-link-${index+1}`;
-                    
-                    const button = document.createElement('button');
-                    button.className = 'secondary';
-                    button.textContent = 'Copy';
-                    button.onclick = function() {
-                        copyShareLink(`${mode}-share-link-${index+1}`);
-                    };
-                    
-                    linkItem.appendChild(label);
-                    linkItem.appendChild(input);
-                    linkItem.appendChild(button);
-                    
-                    linksContainer.appendChild(linkItem);
-                });
+                    links.forEach((link, index) => {
+                        const linkItem = document.createElement('div');
+                        linkItem.className = 'share-link-item';
+                        
+                        const label = document.createElement('span');
+                        label.textContent = `Part ${index+1}`;
+                        
+                        const input = document.createElement('input');
+                        input.type = 'text';
+                        input.className = 'share-link';
+                        input.value = link;
+                        input.readOnly = true;
+                        input.id = `${mode}-share-link-${index+1}`;
+                        
+                        const button = document.createElement('button');
+                        button.className = 'secondary';
+                        button.textContent = 'Copy';
+                        button.onclick = function() {
+                            copyShareLink(`${mode}-share-link-${index+1}`);
+                        };
+                        
+                        linkItem.appendChild(label);
+                        linkItem.appendChild(input);
+                        linkItem.appendChild(button);
+                        
+                        linksContainer.appendChild(linkItem);
+                    });
+                }
+            } catch (e) {
+                console.error("Error in displayShareLinks:", e);
+                // Ensure loading indicator is hidden
+                try {
+                    document.getElementById(`${mode}-loading`).classList.add('hidden');
+                } catch (err) {
+                    // Ignore errors in error handling
+                }
+                
+                // Display a fallback error
+                displayGenerationError(mode);
             }
         }
         
@@ -817,9 +907,7 @@
             pasteNameInput.style.display = 'none';
             document.querySelector('#paste-mode button').style.display = 'none';
             
-            // Show
-
-// Show share container and loading
+            // Show share container and loading
             document.getElementById('paste-share-container').classList.remove('hidden');
             document.getElementById('paste-loading').classList.remove('hidden');
             

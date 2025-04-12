@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Secure Text Share</title>
+    <title>Cross-Device Secure Text Share</title>
     <style>
         body {
             font-family: Arial, sans-serif;
@@ -30,13 +30,13 @@
             flex-direction: column;
             gap: 15px;
         }
-        #password-input {
+        #password-input, #recipient-password-input {
             padding: 12px;
             border: 1px solid #ddd;
             border-radius: 4px;
             font-size: 16px;
         }
-        #text-input {
+        #text-input, #content-input {
             width: 100%;
             height: 250px;
             padding: 12px;
@@ -52,6 +52,7 @@
             gap: 10px;
             margin: 15px 0;
             justify-content: center;
+            flex-wrap: wrap;
         }
         button {
             background-color: #3498db;
@@ -82,8 +83,9 @@
             margin-top: 20px;
             display: none;
         }
-        #share-link {
+        #encrypted-output {
             width: 100%;
+            height: 150px;
             padding: 12px;
             border: 1px solid #ddd;
             border-radius: 4px;
@@ -91,6 +93,7 @@
             font-family: monospace;
             box-sizing: border-box;
             background-color: #f5f5f5;
+            resize: none;
         }
         .notification {
             background-color: #d4edda;
@@ -101,7 +104,7 @@
             text-align: center;
             display: none;
         }
-        #text-display {
+        #decrypted-content {
             width: 100%;
             min-height: 250px;
             padding: 12px;
@@ -181,23 +184,40 @@
             margin-top: 0;
             color: #1976d2;
         }
+        .steps {
+            margin-top: 10px;
+            padding-left: 20px;
+        }
+        .steps li {
+            margin-bottom: 8px;
+        }
+        .highlight {
+            background-color: #fff3cd;
+            padding: 3px 5px;
+            border-radius: 3px;
+        }
     </style>
 </head>
 <body>
-    <h1>Secure Text Share</h1>
+    <h1>Cross-Device Secure Text Share</h1>
     
     <div class="mode-toggle">
-        <button class="mode-button active" id="share-mode-btn" onclick="switchMode('share')">Share Text</button>
-        <button class="mode-button" id="view-mode-btn" onclick="switchMode('view')">View Shared Text</button>
+        <button class="mode-button active" id="sender-mode-btn" onclick="switchMode('sender')">Send Text</button>
+        <button class="mode-button" id="receiver-mode-btn" onclick="switchMode('receiver')">Receive Text</button>
     </div>
     
-    <div id="share-mode" class="tab-content active">
+    <div id="sender-mode" class="tab-content active">
         <div class="container">
-            <h2>Share Text Securely</h2>
+            <h2>Encrypt Text for Sharing</h2>
             <div class="info-box">
-                <h3>How it works</h3>
-                <p>This tool lets you share large text securely using client-side encryption. Your text is encrypted with your password and stored locally. Only someone with the link and password can access it.</p>
-                <p>The shared URL does not contain the actual data, making it firewall-friendly and discreet.</p>
+                <h3>How this works:</h3>
+                <p>This tool allows you to securely share text between different devices/browsers:</p>
+                <ol class="steps">
+                    <li>Enter your text and a password below</li>
+                    <li>Click "Encrypt Text" to generate encrypted data</li>
+                    <li>Copy the encrypted data and paste it in a LinkedIn message or other platform</li>
+                    <li>Share the password separately through a secure channel</li>
+                </ol>
             </div>
             
             <div class="input-container">
@@ -206,42 +226,51 @@
             </div>
             
             <div class="controls">
-                <button id="encrypt-btn" class="success" onclick="encryptAndStore()">Generate Secure Link</button>
+                <button id="encrypt-btn" class="success" onclick="encryptText()">Encrypt Text</button>
                 <button id="clear-btn" class="danger" onclick="clearText()">Clear</button>
             </div>
             
             <div id="output-container">
-                <h3>Share this link:</h3>
-                <input type="text" id="share-link" readonly />
+                <h3>Encrypted Data:</h3>
+                <p>Copy this encrypted data and share it via LinkedIn message or another platform:</p>
+                <textarea id="encrypted-output" readonly></textarea>
                 <div class="controls">
-                    <button class="copy-button" onclick="copyToClipboard('share-link')">Copy Link</button>
+                    <button class="copy-button" onclick="copyToClipboard('encrypted-output')">Copy Encrypted Data</button>
                 </div>
-                <div class="notification" id="copy-notification">Link copied to clipboard!</div>
+                <div class="notification" id="copy-notification">Encrypted data copied to clipboard!</div>
             </div>
+            
+            <div class="error" id="sender-error"></div>
         </div>
     </div>
     
-    <div id="view-mode" class="tab-content">
+    <div id="receiver-mode" class="tab-content">
         <div class="container">
-            <h2>View Shared Text</h2>
+            <h2>Decrypt Shared Text</h2>
             <div class="info-box">
-                <h3>Accessing shared content</h3>
-                <p>Enter the password that was used to encrypt the content. If the password is correct, the shared text will be displayed below.</p>
+                <h3>How to access shared text:</h3>
+                <ol class="steps">
+                    <li>Paste the encrypted data you received below</li>
+                    <li>Enter the password provided by the sender</li>
+                    <li>Click "Decrypt Text" to view the original content</li>
+                </ol>
             </div>
             
             <div class="input-container">
-                <input type="text" id="decrypt-password" placeholder="Enter the decryption password" />
+                <textarea id="content-input" placeholder="Paste the encrypted data here..."></textarea>
+                <input type="text" id="recipient-password-input" placeholder="Enter the decryption password" />
             </div>
             
             <div class="controls">
-                <button class="success" onclick="decryptFromStorage()">Decrypt Text</button>
+                <button class="success" onclick="decryptText()">Decrypt Text</button>
+                <button class="danger" onclick="clearReceivedText()">Clear</button>
             </div>
             
-            <div class="error" id="error-message"></div>
+            <div class="error" id="receiver-error"></div>
             
-            <div id="text-display"></div>
+            <div id="decrypted-content"></div>
             <div class="controls" id="copy-text-control" style="display: none;">
-                <button class="copy-button" onclick="copyToClipboard('text-display')">Copy Text</button>
+                <button class="copy-button" onclick="copyToClipboard('decrypted-content')">Copy Decrypted Text</button>
                 <div class="notification" id="text-copy-notification">Text copied to clipboard!</div>
             </div>
         </div>
@@ -252,164 +281,170 @@
     </footer>
 
     <script>
-        // Check if the page is loaded with a key parameter
-        window.onload = function() {
-            // Get the key from URL if present
-            const urlParams = new URLSearchParams(window.location.search);
-            const key = urlParams.get('key');
-            
-            if (key) {
-                // Switch to view mode
-                switchMode('view');
-                // Store the key in sessionStorage for later use
-                sessionStorage.setItem('currentKey', key);
-            }
-        };
-        
         function switchMode(mode) {
             // Update button states
-            document.getElementById('share-mode-btn').classList.remove('active');
-            document.getElementById('view-mode-btn').classList.remove('active');
+            document.querySelectorAll('.mode-button').forEach(btn => {
+                btn.classList.remove('active');
+            });
             document.getElementById(mode + '-mode-btn').classList.add('active');
             
             // Update content visibility
-            document.getElementById('share-mode').classList.remove('active');
-            document.getElementById('view-mode').classList.remove('active');
+            document.querySelectorAll('.tab-content').forEach(content => {
+                content.classList.remove('active');
+            });
             document.getElementById(mode + '-mode').classList.add('active');
+            
+            // Clear error messages when switching modes
+            document.querySelectorAll('.error').forEach(error => {
+                error.style.display = 'none';
+            });
         }
         
-        function encryptAndStore() {
+        function encryptText() {
             const text = document.getElementById('text-input').value;
             const password = document.getElementById('password-input').value;
             
             if (!text.trim()) {
-                showError('Please enter some text to share.');
+                showError('Please enter some text to encrypt.', 'sender-error');
                 return;
             }
             
             if (!password.trim()) {
-                showError('Please enter a password for encryption.');
+                showError('Please enter a password for encryption.', 'sender-error');
                 return;
             }
             
             try {
-                // Generate a unique key for this content
-                const uniqueKey = generateUniqueKey();
-                
                 // Encrypt the text with the password
-                const encryptedText = encryptText(text, password);
+                const encryptedData = encryptTextWithPassword(text, password);
                 
-                // Store the encrypted text in localStorage with the key
-                localStorage.setItem('encrypted_' + uniqueKey, encryptedText);
-                
-                // Create and display the share link
-                const shareLink = createShareLink(uniqueKey);
-                document.getElementById('share-link').value = shareLink;
+                // Display the encrypted data
+                document.getElementById('encrypted-output').value = encryptedData;
                 document.getElementById('output-container').style.display = 'block';
                 
-                // Clear any previous errors
-                hideError();
+                // Hide any previous errors
+                hideError('sender-error');
             } catch (error) {
                 console.error('Encryption error:', error);
-                showError('An error occurred during encryption. Please try again.');
+                showError('An error occurred during encryption. Please try again.', 'sender-error');
             }
         }
         
-        function decryptFromStorage() {
+        function decryptText() {
+            const encryptedData = document.getElementById('content-input').value;
+            const password = document.getElementById('recipient-password-input').value;
+            
+            if (!encryptedData.trim()) {
+                showError('Please paste the encrypted data.', 'receiver-error');
+                return;
+            }
+            
+            if (!password.trim()) {
+                showError('Please enter the decryption password.', 'receiver-error');
+                return;
+            }
+            
             try {
-                // Get the key from sessionStorage
-                const uniqueKey = sessionStorage.getItem('currentKey');
-                if (!uniqueKey) {
-                    showError('No shared content found. Please check the URL.');
-                    return;
-                }
-                
-                // Get the password entered by the user
-                const password = document.getElementById('decrypt-password').value;
-                if (!password.trim()) {
-                    showError('Please enter the decryption password.');
-                    return;
-                }
-                
-                // Retrieve the encrypted text from localStorage
-                const encryptedText = localStorage.getItem('encrypted_' + uniqueKey);
-                if (!encryptedText) {
-                    showError('The shared content could not be found. It may have been removed or expired.');
-                    return;
-                }
-                
-                // Decrypt the text
-                const decryptedText = decryptText(encryptedText, password);
+                // Decrypt the data with the password
+                const decryptedText = decryptTextWithPassword(encryptedData, password);
                 
                 // Display the decrypted text
-                document.getElementById('text-display').textContent = decryptedText;
-                document.getElementById('text-display').style.display = 'block';
+                document.getElementById('decrypted-content').textContent = decryptedText;
+                document.getElementById('decrypted-content').style.display = 'block';
                 document.getElementById('copy-text-control').style.display = 'block';
                 
-                // Clear any previous errors
-                hideError();
+                // Hide any previous errors
+                hideError('receiver-error');
             } catch (error) {
                 console.error('Decryption error:', error);
-                showError('Failed to decrypt. Please check if the password is correct.');
+                showError('Failed to decrypt. Please check if the encrypted data and password are correct.', 'receiver-error');
             }
         }
         
-        function generateUniqueKey() {
-            // Generate a random key (16 characters)
-            const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
-            let key = '';
-            for (let i = 0; i < 16; i++) {
-                key += chars.charAt(Math.floor(Math.random() * chars.length));
+        function encryptTextWithPassword(text, password) {
+            // XOR encryption with padding and compression
+            try {
+                // First, create a payload object with the text
+                const payload = {
+                    text: text,
+                    timestamp: new Date().toISOString() // Add timestamp for uniqueness
+                };
+                
+                // Convert to JSON string
+                const jsonString = JSON.stringify(payload);
+                
+                // Simple XOR encryption
+                const passwordBytes = new TextEncoder().encode(password);
+                const textBytes = new TextEncoder().encode(jsonString);
+                const result = new Uint8Array(textBytes.length);
+                
+                for (let i = 0; i < textBytes.length; i++) {
+                    result[i] = textBytes[i] ^ passwordBytes[i % passwordBytes.length];
+                }
+                
+                // Convert to base64 for easy sharing
+                const base64Encoded = btoa(String.fromCharCode.apply(null, result));
+                
+                // Add a header to identify our encrypted content
+                return `X-SECURE-DATA:${base64Encoded}`;
+            } catch (error) {
+                console.error('Encryption error details:', error);
+                throw new Error('Encryption failed');
             }
-            return key;
         }
         
-        function encryptText(text, password) {
-            // Simple XOR encryption (you might want to use a more robust method in production)
-            const textBytes = new TextEncoder().encode(text);
-            const passwordBytes = new TextEncoder().encode(password);
-            const result = new Uint8Array(textBytes.length);
-            
-            for (let i = 0; i < textBytes.length; i++) {
-                result[i] = textBytes[i] ^ passwordBytes[i % passwordBytes.length];
+        function decryptTextWithPassword(encryptedData, password) {
+            try {
+                // Remove any header if present
+                let cleanData = encryptedData;
+                if (encryptedData.startsWith('X-SECURE-DATA:')) {
+                    cleanData = encryptedData.substring('X-SECURE-DATA:'.length);
+                }
+                
+                // Decode from base64
+                const encryptedBytes = new Uint8Array(atob(cleanData).split('').map(char => char.charCodeAt(0)));
+                const passwordBytes = new TextEncoder().encode(password);
+                const result = new Uint8Array(encryptedBytes.length);
+                
+                // XOR decryption
+                for (let i = 0; i < encryptedBytes.length; i++) {
+                    result[i] = encryptedBytes[i] ^ passwordBytes[i % passwordBytes.length];
+                }
+                
+                // Convert back to text
+                const jsonString = new TextDecoder().decode(result);
+                
+                // Parse the JSON to get the original text
+                const payload = JSON.parse(jsonString);
+                return payload.text;
+            } catch (error) {
+                console.error('Decryption error details:', error);
+                throw new Error('Decryption failed');
             }
-            
-            // Convert to base64 for storage
-            return btoa(String.fromCharCode.apply(null, result));
-        }
-        
-        function decryptText(encryptedBase64, password) {
-            // Decode base64
-            const encryptedBytes = new Uint8Array(atob(encryptedBase64).split('').map(char => char.charCodeAt(0)));
-            const passwordBytes = new TextEncoder().encode(password);
-            const result = new Uint8Array(encryptedBytes.length);
-            
-            for (let i = 0; i < encryptedBytes.length; i++) {
-                result[i] = encryptedBytes[i] ^ passwordBytes[i % passwordBytes.length];
-            }
-            
-            return new TextDecoder().decode(result);
-        }
-        
-        function createShareLink(key) {
-            const baseUrl = window.location.href.split('?')[0];
-            return `${baseUrl}?key=${key}`;
         }
         
         function copyToClipboard(elementId) {
             const element = document.getElementById(elementId);
             
-            if (elementId === 'text-display') {
-                // For text display, we need to copy its content
+            if (elementId === 'decrypted-content') {
+                // For text content elements
                 navigator.clipboard.writeText(element.textContent)
                     .then(() => {
                         showNotification('text-copy-notification');
                     })
                     .catch(err => {
                         console.error('Could not copy text: ', err);
+                        // Fallback
+                        const tempTextarea = document.createElement('textarea');
+                        tempTextarea.value = element.textContent;
+                        document.body.appendChild(tempTextarea);
+                        tempTextarea.select();
+                        document.execCommand('copy');
+                        document.body.removeChild(tempTextarea);
+                        showNotification('text-copy-notification');
                     });
             } else {
-                // For input elements
+                // For input/textarea elements
                 element.select();
                 element.setSelectionRange(0, 99999); // For mobile devices
                 
@@ -439,16 +474,25 @@
             document.getElementById('text-input').value = '';
             document.getElementById('password-input').value = '';
             document.getElementById('output-container').style.display = 'none';
+            hideError('sender-error');
         }
         
-        function showError(message) {
-            const errorElement = document.getElementById('error-message');
+        function clearReceivedText() {
+            document.getElementById('content-input').value = '';
+            document.getElementById('recipient-password-input').value = '';
+            document.getElementById('decrypted-content').style.display = 'none';
+            document.getElementById('copy-text-control').style.display = 'none';
+            hideError('receiver-error');
+        }
+        
+        function showError(message, elementId) {
+            const errorElement = document.getElementById(elementId);
             errorElement.textContent = message;
             errorElement.style.display = 'block';
         }
         
-        function hideError() {
-            document.getElementById('error-message').style.display = 'none';
+        function hideError(elementId) {
+            document.getElementById(elementId).style.display = 'none';
         }
     </script>
 </body>

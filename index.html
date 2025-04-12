@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Cross-Device Secure Text Share</title>
+    <title>Secure Large Data Sharing Tool</title>
     <style>
         body {
             font-family: Arial, sans-serif;
@@ -14,7 +14,7 @@
             background-color: #f8f9fa;
             color: #333;
         }
-        h1, h2 {
+        h1, h2, h3 {
             text-align: center;
             color: #2c3e50;
         }
@@ -30,13 +30,13 @@
             flex-direction: column;
             gap: 15px;
         }
-        #password-input, #recipient-password-input {
+        input[type="text"], input[type="number"] {
             padding: 12px;
             border: 1px solid #ddd;
             border-radius: 4px;
             font-size: 16px;
         }
-        #text-input, #content-input {
+        textarea {
             width: 100%;
             height: 250px;
             padding: 12px;
@@ -79,13 +79,27 @@
         button.success:hover {
             background-color: #27ae60;
         }
-        #output-container {
-            margin-top: 20px;
-            display: none;
+        button:disabled {
+            background-color: #95a5a6;
+            cursor: not-allowed;
         }
-        #encrypted-output {
+        .chunk-item {
+            margin-bottom: 20px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            padding: 15px;
+            background-color: #f9f9f9;
+        }
+        .chunk-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+            font-weight: bold;
+        }
+        .chunk-data {
             width: 100%;
-            height: 150px;
+            height: 100px;
             padding: 12px;
             border: 1px solid #ddd;
             border-radius: 4px;
@@ -94,6 +108,7 @@
             box-sizing: border-box;
             background-color: #f5f5f5;
             resize: none;
+            font-size: 12px;
         }
         .notification {
             background-color: #d4edda;
@@ -125,7 +140,6 @@
             border-radius: 4px;
             cursor: pointer;
             font-size: 14px;
-            margin-top: 10px;
         }
         .copy-button:hover {
             background-color: #6c7a7d;
@@ -191,79 +205,129 @@
         .steps li {
             margin-bottom: 8px;
         }
+        #chunks-list {
+            max-height: 600px;
+            overflow-y: auto;
+            padding: 10px;
+        }
+        #received-chunks-list {
+            margin: 15px 0;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            background-color: #f5f5f5;
+        }
+        .progress-container {
+            width: 100%;
+            background-color: #e0e0e0;
+            border-radius: 4px;
+            margin: 15px 0;
+            height: 10px;
+        }
+        .progress-bar {
+            height: 100%;
+            background-color: #4CAF50;
+            border-radius: 4px;
+            transition: width 0.3s;
+            width: 0%;
+        }
+        .status {
+            text-align: center;
+            margin: 10px 0;
+            font-size: 14px;
+            color: #666;
+        }
         .highlight {
             background-color: #fff3cd;
-            padding: 3px 5px;
-            border-radius: 3px;
+            padding: 3px 6px;
+            border-radius: 4px;
+            font-weight: bold;
+        }
+        .chunk-indicator {
+            margin-top: 5px;
+            color: #666;
+            font-size: 14px;
         }
     </style>
 </head>
 <body>
-    <h1>Cross-Device Secure Text Share</h1>
+    <h1>Secure Large Data Sharing Tool</h1>
     
     <div class="mode-toggle">
-        <button class="mode-button active" id="sender-mode-btn" onclick="switchMode('sender')">Send Text</button>
+        <button class="mode-button active" id="sender-mode-btn" onclick="switchMode('sender')">Send Large Text</button>
         <button class="mode-button" id="receiver-mode-btn" onclick="switchMode('receiver')">Receive Text</button>
     </div>
     
     <div id="sender-mode" class="tab-content active">
         <div class="container">
-            <h2>Encrypt Text for Sharing</h2>
+            <h2>Split & Encrypt Large Text</h2>
             <div class="info-box">
                 <h3>How this works:</h3>
-                <p>This tool allows you to securely share text between different devices/browsers:</p>
+                <p>This tool safely splits large text into encrypted chunks that can each be shared separately:</p>
                 <ol class="steps">
-                    <li>Enter your text and a password below</li>
-                    <li>Click "Encrypt Text" to generate encrypted data</li>
-                    <li>Copy the encrypted data and paste it in a LinkedIn message or other platform</li>
-                    <li>Share the password separately through a secure channel</li>
+                    <li>Enter your text and create a password</li>
+                    <li>Set the chunk size (how many characters per message)</li>
+                    <li>Click "Create Encrypted Chunks"</li>
+                    <li>Share each chunk separately through any medium (LinkedIn, email, etc.)</li>
                 </ol>
             </div>
             
             <div class="input-container">
                 <input type="text" id="password-input" placeholder="Enter a password for encryption (required)" />
+                <div style="display: flex; gap: 15px; align-items: center;">
+                    <label for="chunk-size">Characters per chunk:</label>
+                    <input type="number" id="chunk-size" value="6000" min="1000" max="8000" style="width: 100px;" />
+                    <span style="font-size: 14px; color: #666;">(recommended: 6000 for LinkedIn)</span>
+                </div>
                 <textarea id="text-input" placeholder="Type or paste your text here..."></textarea>
             </div>
             
             <div class="controls">
-                <button id="encrypt-btn" class="success" onclick="encryptText()">Encrypt Text</button>
+                <button id="encrypt-btn" class="success" onclick="splitAndEncrypt()">Create Encrypted Chunks</button>
                 <button id="clear-btn" class="danger" onclick="clearText()">Clear</button>
             </div>
             
-            <div id="output-container">
-                <h3>Encrypted Data:</h3>
-                <p>Copy this encrypted data and share it via LinkedIn message or another platform:</p>
-                <textarea id="encrypted-output" readonly></textarea>
-                <div class="controls">
-                    <button class="copy-button" onclick="copyToClipboard('encrypted-output')">Copy Encrypted Data</button>
-                </div>
-                <div class="notification" id="copy-notification">Encrypted data copied to clipboard!</div>
-            </div>
-            
             <div class="error" id="sender-error"></div>
+            
+            <div id="output-container" style="display: none;">
+                <h3>Encrypted Chunks</h3>
+                <p class="status">Copy and send each chunk separately. The recipient will need all chunks and your password.</p>
+                
+                <div id="chunks-list"></div>
+            </div>
         </div>
     </div>
     
     <div id="receiver-mode" class="tab-content">
         <div class="container">
-            <h2>Decrypt Shared Text</h2>
+            <h2>Assemble & Decrypt Text</h2>
             <div class="info-box">
-                <h3>How to access shared text:</h3>
+                <h3>How to retrieve the original text:</h3>
                 <ol class="steps">
-                    <li>Paste the encrypted data you received below</li>
+                    <li>Paste each encrypted chunk you received</li>
                     <li>Enter the password provided by the sender</li>
-                    <li>Click "Decrypt Text" to view the original content</li>
+                    <li>Click "Assemble & Decrypt" to see the original text</li>
                 </ol>
+                <p>Note: Each chunk contains information about its position, so you can paste them in any order.</p>
             </div>
             
             <div class="input-container">
-                <textarea id="content-input" placeholder="Paste the encrypted data here..."></textarea>
-                <input type="text" id="recipient-password-input" placeholder="Enter the decryption password" />
+                <textarea id="chunk-input" placeholder="Paste an encrypted chunk here..."></textarea>
+                <button onclick="addChunk()">Add Chunk</button>
+                
+                <div class="progress-container">
+                    <div class="progress-bar" id="progress-bar"></div>
+                </div>
+                <p class="status" id="chunks-status">No chunks added yet</p>
+                
+                <div id="received-chunks-list"></div>
+                
+                <input type="text" id="decrypt-password" placeholder="Enter the password to decrypt" />
             </div>
             
             <div class="controls">
-                <button class="success" onclick="decryptText()">Decrypt Text</button>
-                <button class="danger" onclick="clearReceivedText()">Clear</button>
+                <button id="decrypt-btn" class="success" onclick="assembleAndDecrypt()" disabled>Assemble & Decrypt</button>
+                <button class="danger" onclick="clearReceiver()">Clear All</button>
             </div>
             
             <div class="error" id="receiver-error"></div>
@@ -281,6 +345,11 @@
     </footer>
 
     <script>
+        // Global variables
+        let receivedChunks = {};
+        let totalChunks = 0;
+        
+        // Switch between sender and receiver modes
         function switchMode(mode) {
             // Update button states
             document.querySelectorAll('.mode-button').forEach(btn => {
@@ -294,16 +363,19 @@
             });
             document.getElementById(mode + '-mode').classList.add('active');
             
-            // Clear error messages when switching modes
-            document.querySelectorAll('.error').forEach(error => {
-                error.style.display = 'none';
-            });
+            // Clear error messages
+            hideError('sender-error');
+            hideError('receiver-error');
         }
         
-        function encryptText() {
+        // Function to split and encrypt text
+        function splitAndEncrypt() {
+            // Get the input values
             const text = document.getElementById('text-input').value;
             const password = document.getElementById('password-input').value;
+            const chunkSize = parseInt(document.getElementById('chunk-size').value) || 6000;
             
+            // Validate inputs
             if (!text.trim()) {
                 showError('Please enter some text to encrypt.', 'sender-error');
                 return;
@@ -314,153 +386,384 @@
                 return;
             }
             
+            if (chunkSize < 1000 || chunkSize > 8000) {
+                showError('Chunk size should be between 1000 and 8000 characters.', 'sender-error');
+                return;
+            }
+            
             try {
-                // Encrypt the text with the password
-                const encryptedData = encryptTextWithPassword(text, password);
+                // Generate a session ID to group these chunks together
+                const sessionId = generateRandomId(8);
                 
-                // Display the encrypted data
-                document.getElementById('encrypted-output').value = encryptedData;
-                document.getElementById('output-container').style.display = 'block';
+                // Calculate how many chunks we'll need
+                const textLength = text.length;
+                const dataChunkSize = Math.floor(chunkSize * 0.7); // Allow space for headers and overhead
+                const numChunks = Math.ceil(textLength / dataChunkSize);
+                
+                // Create an array to hold all chunks
+                const chunks = [];
+                
+                // Split the text into chunks
+                for (let i = 0; i < numChunks; i++) {
+                    const start = i * dataChunkSize;
+                    const end = Math.min((i + 1) * dataChunkSize, textLength);
+                    const chunkText = text.substring(start, end);
+                    
+                    // Create a chunk object with metadata
+                    const chunkData = {
+                        id: sessionId,
+                        index: i + 1,
+                        total: numChunks,
+                        text: chunkText
+                    };
+                    
+                    // Encrypt the chunk
+                    const encryptedChunk = encryptObject(chunkData, password);
+                    
+                    // Format with a header so we can identify and extract it later
+                    const formattedChunk = `-----BEGIN ENCRYPTED CHUNK-----\n${encryptedChunk}\n-----END ENCRYPTED CHUNK-----`;
+                    
+                    chunks.push(formattedChunk);
+                }
+                
+                // Display the chunks
+                displayChunks(chunks);
                 
                 // Hide any previous errors
                 hideError('sender-error');
             } catch (error) {
-                console.error('Encryption error:', error);
-                showError('An error occurred during encryption. Please try again.', 'sender-error');
+                console.error('Error during encryption:', error);
+                showError('An error occurred while creating the encrypted chunks. Please try again.', 'sender-error');
             }
         }
         
-        function decryptText() {
-            const encryptedData = document.getElementById('content-input').value;
-            const password = document.getElementById('recipient-password-input').value;
+        // Function to display the list of chunks
+        function displayChunks(chunks) {
+            const chunksContainer = document.getElementById('chunks-list');
+            chunksContainer.innerHTML = '';
             
-            if (!encryptedData.trim()) {
-                showError('Please paste the encrypted data.', 'receiver-error');
+            chunks.forEach((chunk, index) => {
+                const chunkDiv = document.createElement('div');
+                chunkDiv.className = 'chunk-item';
+                
+                const header = document.createElement('div');
+                header.className = 'chunk-header';
+                header.innerHTML = `<span>Chunk ${index + 1} of ${chunks.length}</span>`;
+                
+                const textarea = document.createElement('textarea');
+                textarea.className = 'chunk-data';
+                textarea.value = chunk;
+                textarea.readOnly = true;
+                textarea.id = `chunk-${index + 1}`;
+                
+                const copyButton = document.createElement('button');
+                copyButton.className = 'copy-button';
+                copyButton.textContent = 'Copy Chunk';
+                copyButton.onclick = function() {
+                    copyToClipboard(`chunk-${index + 1}`);
+                    this.textContent = 'Copied!';
+                    setTimeout(() => {
+                        this.textContent = 'Copy Chunk';
+                    }, 2000);
+                };
+                
+                chunkDiv.appendChild(header);
+                chunkDiv.appendChild(textarea);
+                chunkDiv.appendChild(copyButton);
+                
+                chunksContainer.appendChild(chunkDiv);
+            });
+            
+            // Show the output container
+            document.getElementById('output-container').style.display = 'block';
+        }
+        
+        // Function to add a received chunk
+        function addChunk() {
+            const chunkText = document.getElementById('chunk-input').value.trim();
+            
+            if (!chunkText) {
+                showError('Please paste an encrypted chunk.', 'receiver-error');
                 return;
             }
+            
+            try {
+                // Extract the chunk data from the formatted text
+                const chunk = extractEncryptedChunk(chunkText);
+                
+                if (!chunk) {
+                    showError('Invalid chunk format. Please copy and paste the entire chunk including the BEGIN and END markers.', 'receiver-error');
+                    return;
+                }
+                
+                // Save this chunk for later decryption
+                // We don't decrypt yet because we don't know the password
+                // Just verify it's a valid format
+                const metadata = getChunkMetadata(chunk);
+                
+                if (metadata) {
+                    // Add to received chunks
+                    if (!receivedChunks[metadata.id]) {
+                        receivedChunks[metadata.id] = {
+                            chunks: {},
+                            total: metadata.total
+                        };
+                    }
+                    
+                    receivedChunks[metadata.id].chunks[metadata.index] = chunk;
+                    
+                    // Update the UI
+                    updateReceivedChunksUI();
+                    
+                    // Clear the input
+                    document.getElementById('chunk-input').value = '';
+                    
+                    // Hide any previous errors
+                    hideError('receiver-error');
+                } else {
+                    showError('Could not read chunk metadata. Please ensure you\'ve copied the entire chunk correctly.', 'receiver-error');
+                }
+            } catch (error) {
+                console.error('Error processing chunk:', error);
+                showError('An error occurred while processing the chunk. Please try again.', 'receiver-error');
+            }
+        }
+        
+        // Function to update the receiver UI with current chunks status
+        function updateReceivedChunksUI() {
+            const chunksContainer = document.getElementById('received-chunks-list');
+            chunksContainer.innerHTML = '';
+            
+            // If we have no chunks, show a message
+            if (Object.keys(receivedChunks).length === 0) {
+                document.getElementById('chunks-status').textContent = 'No chunks added yet';
+                document.getElementById('progress-bar').style.width = '0%';
+                document.getElementById('decrypt-btn').disabled = true;
+                return;
+            }
+            
+            // For simplicity, we'll focus on the first session ID we encounter
+            // In a more complex implementation, you could allow selecting between different sets
+            const sessionId = Object.keys(receivedChunks)[0];
+            const session = receivedChunks[sessionId];
+            
+            // Count received chunks
+            const receivedCount = Object.keys(session.chunks).length;
+            const totalChunks = session.total;
+            
+            // Update progress display
+            const progressPercent = (receivedCount / totalChunks) * 100;
+            document.getElementById('progress-bar').style.width = `${progressPercent}%`;
+            document.getElementById('chunks-status').textContent = 
+                `Received ${receivedCount} of ${totalChunks} chunks (${Math.round(progressPercent)}% complete)`;
+            
+            // Enable decrypt button if we have all chunks
+            document.getElementById('decrypt-btn').disabled = receivedCount < totalChunks;
+            
+            // Create a visual representation of received chunks
+            for (let i = 1; i <= totalChunks; i++) {
+                const chunkSpan = document.createElement('span');
+                chunkSpan.style.display = 'inline-block';
+                chunkSpan.style.padding = '5px 10px';
+                chunkSpan.style.margin = '5px';
+                chunkSpan.style.borderRadius = '4px';
+                
+                if (session.chunks[i]) {
+                    chunkSpan.style.backgroundColor = '#d4edda';
+                    chunkSpan.style.color = '#155724';
+                    chunkSpan.textContent = `Chunk ${i}`;
+                } else {
+                    chunkSpan.style.backgroundColor = '#f8d7da';
+                    chunkSpan.style.color = '#721c24';
+                    chunkSpan.textContent = `Missing ${i}`;
+                }
+                
+                chunksContainer.appendChild(chunkSpan);
+            }
+        }
+        
+        // Function to assemble and decrypt all chunks
+        function assembleAndDecrypt() {
+            const password = document.getElementById('decrypt-password').value;
             
             if (!password.trim()) {
                 showError('Please enter the decryption password.', 'receiver-error');
                 return;
             }
             
+            if (Object.keys(receivedChunks).length === 0) {
+                showError('No chunks have been added. Please add at least one chunk.', 'receiver-error');
+                return;
+            }
+            
             try {
-                // Decrypt the data with the password
-                const decryptedText = decryptTextWithPassword(encryptedData, password);
+                // Get the first session
+                const sessionId = Object.keys(receivedChunks)[0];
+                const session = receivedChunks[sessionId];
+                
+                // Check if we have all chunks
+                const receivedCount = Object.keys(session.chunks).length;
+                
+                if (receivedCount < session.total) {
+                    showError(`Missing chunks. Only ${receivedCount} of ${session.total} chunks have been added.`, 'receiver-error');
+                    return;
+                }
+                
+                // Sort the chunks by index
+                const sortedChunkIndexes = Object.keys(session.chunks)
+                    .map(Number)
+                    .sort((a, b) => a - b);
+                
+                // Try to decrypt each chunk and assemble the text
+                let assembledText = '';
+                
+                for (const index of sortedChunkIndexes) {
+                    const encryptedChunk = session.chunks[index];
+                    
+                    try {
+                        // Decrypt the chunk
+                        const decryptedData = decryptObject(encryptedChunk, password);
+                        
+                        // Add to the assembled text
+                        assembledText += decryptedData.text;
+                    } catch (error) {
+                        showError('Failed to decrypt. Please check if the password is correct.', 'receiver-error');
+                        return;
+                    }
+                }
                 
                 // Display the decrypted text
-                document.getElementById('decrypted-content').textContent = decryptedText;
+                document.getElementById('decrypted-content').textContent = assembledText;
                 document.getElementById('decrypted-content').style.display = 'block';
                 document.getElementById('copy-text-control').style.display = 'block';
                 
                 // Hide any previous errors
                 hideError('receiver-error');
             } catch (error) {
-                console.error('Decryption error:', error);
-                showError('Failed to decrypt. Please check if the encrypted data and password are correct.', 'receiver-error');
+                console.error('Error during decryption:', error);
+                showError('An error occurred while decrypting. Please check the password and try again.', 'receiver-error');
             }
         }
         
-        function encryptTextWithPassword(text, password) {
-            // XOR encryption with padding and compression
+        // Extract the encrypted data from a formatted chunk
+        function extractEncryptedChunk(formattedText) {
+            const matches = formattedText.match(/-----BEGIN ENCRYPTED CHUNK-----([\s\S]*?)-----END ENCRYPTED CHUNK-----/);
+            return matches ? matches[1].trim() : null;
+        }
+        
+        // Try to get metadata from a chunk without full decryption
+        function getChunkMetadata(encryptedChunk) {
             try {
-                // First, create a payload object with the text
-                const payload = {
-                    text: text,
-                    timestamp: new Date().toISOString() // Add timestamp for uniqueness
-                };
+                // The first few characters of the base64 string can be decoded to find the header
+                // This is a simplified version - actual implementation would be more robust
+                const partialData = atob(encryptedChunk.substring(0, 50));
                 
-                // Convert to JSON string
-                const jsonString = JSON.stringify(payload);
+                // Extract metadata using regex
+                const idMatch = partialData.match(/"id":"([^"]*)"/);
+                const indexMatch = partialData.match(/"index":(\d+)/);
+                const totalMatch = partialData.match(/"total":(\d+)/);
                 
-                // Simple XOR encryption
-                const passwordBytes = new TextEncoder().encode(password);
-                const textBytes = new TextEncoder().encode(jsonString);
-                const result = new Uint8Array(textBytes.length);
-                
-                for (let i = 0; i < textBytes.length; i++) {
-                    result[i] = textBytes[i] ^ passwordBytes[i % passwordBytes.length];
+                if (idMatch && indexMatch && totalMatch) {
+                    return {
+                        id: idMatch[1],
+                        index: parseInt(indexMatch[1]),
+                        total: parseInt(totalMatch[1])
+                    };
                 }
-                
-                // Convert to base64 for easy sharing
-                const base64Encoded = btoa(String.fromCharCode.apply(null, result));
-                
-                // Add a header to identify our encrypted content
-                return `X-SECURE-DATA:${base64Encoded}`;
-            } catch (error) {
-                console.error('Encryption error details:', error);
-                throw new Error('Encryption failed');
+            } catch (e) {
+                console.error('Error extracting metadata:', e);
             }
+            return null;
         }
         
-        function decryptTextWithPassword(encryptedData, password) {
-            try {
-                // Remove any header if present
-                let cleanData = encryptedData;
-                if (encryptedData.startsWith('X-SECURE-DATA:')) {
-                    cleanData = encryptedData.substring('X-SECURE-DATA:'.length);
-                }
-                
-                // Decode from base64
-                const encryptedBytes = new Uint8Array(atob(cleanData).split('').map(char => char.charCodeAt(0)));
-                const passwordBytes = new TextEncoder().encode(password);
-                const result = new Uint8Array(encryptedBytes.length);
-                
-                // XOR decryption
-                for (let i = 0; i < encryptedBytes.length; i++) {
-                    result[i] = encryptedBytes[i] ^ passwordBytes[i % passwordBytes.length];
-                }
-                
-                // Convert back to text
-                const jsonString = new TextDecoder().decode(result);
-                
-                // Parse the JSON to get the original text
-                const payload = JSON.parse(jsonString);
-                return payload.text;
-            } catch (error) {
-                console.error('Decryption error details:', error);
-                throw new Error('Decryption failed');
+        // Encrypt an object with a password
+        function encryptObject(object, password) {
+            // Convert object to JSON string
+            const jsonString = JSON.stringify(object);
+            
+            // Create a simple XOR encryption
+            const textBytes = new TextEncoder().encode(jsonString);
+            const passwordBytes = new TextEncoder().encode(password);
+            const result = new Uint8Array(textBytes.length);
+            
+            for (let i = 0; i < textBytes.length; i++) {
+                result[i] = textBytes[i] ^ passwordBytes[i % passwordBytes.length];
             }
+            
+            // Convert to base64 for storage
+            return btoa(String.fromCharCode.apply(null, result));
         }
         
+        // Decrypt an object with a password
+        function decryptObject(encryptedBase64, password) {
+            // Decode from base64
+            const encryptedBytes = new Uint8Array(atob(encryptedBase64).split('').map(char => char.charCodeAt(0)));
+            const passwordBytes = new TextEncoder().encode(password);
+            const result = new Uint8Array(encryptedBytes.length);
+            
+            // XOR decryption
+            for (let i = 0; i < encryptedBytes.length; i++) {
+                result[i] = encryptedBytes[i] ^ passwordBytes[i % passwordBytes.length];
+            }
+            
+            // Convert back to text
+            const jsonString = new TextDecoder().decode(result);
+            
+            // Parse the JSON to get the original object
+            return JSON.parse(jsonString);
+        }
+        
+        // Generate a random ID
+        function generateRandomId(length) {
+            const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
+            let id = '';
+            for (let i = 0; i < length; i++) {
+                id += chars.charAt(Math.floor(Math.random() * chars.length));
+            }
+            return id;
+        }
+        
+        // Copy text to clipboard
         function copyToClipboard(elementId) {
             const element = document.getElementById(elementId);
             
-            if (elementId === 'decrypted-content') {
-                // For text content elements
-                navigator.clipboard.writeText(element.textContent)
-                    .then(() => {
-                        showNotification('text-copy-notification');
-                    })
-                    .catch(err => {
-                        console.error('Could not copy text: ', err);
-                        // Fallback
-                        const tempTextarea = document.createElement('textarea');
-                        tempTextarea.value = element.textContent;
-                        document.body.appendChild(tempTextarea);
-                        tempTextarea.select();
-                        document.execCommand('copy');
-                        document.body.removeChild(tempTextarea);
-                        showNotification('text-copy-notification');
-                    });
-            } else {
-                // For input/textarea elements
+            if (element.tagName.toLowerCase() === 'textarea' || element.tagName.toLowerCase() === 'input') {
                 element.select();
                 element.setSelectionRange(0, 99999); // For mobile devices
                 
                 navigator.clipboard.writeText(element.value)
                     .then(() => {
-                        showNotification('copy-notification');
+                        // Success
                     })
                     .catch(err => {
-                        console.error('Could not copy text: ', err);
+                        console.error('Could not copy: ', err);
                         // Fallback
                         document.execCommand('copy');
-                        showNotification('copy-notification');
+                    });
+            } else {
+                // For div elements or other non-input elements
+                const text = element.textContent;
+                navigator.clipboard.writeText(text)
+                    .then(() => {
+                        showNotification('text-copy-notification');
+                    })
+                    .catch(err => {
+                        console.error('Could not copy: ', err);
+                        
+                        // Fallback
+                        const textarea = document.createElement('textarea');
+                        textarea.value = text;
+                        textarea.style.position = 'fixed';  // Prevent scrolling to bottom
+                        document.body.appendChild(textarea);
+                        textarea.select();
+                        document.execCommand('copy');
+                        document.body.removeChild(textarea);
+                        showNotification('text-copy-notification');
                     });
             }
         }
         
+        // Show notification
         function showNotification(notificationId) {
             const notification = document.getElementById(notificationId);
             notification.style.display = 'block';
@@ -470,6 +773,19 @@
             }, 2000);
         }
         
+        // Show error message
+        function showError(message, elementId) {
+            const errorElement = document.getElementById(elementId);
+            errorElement.textContent = message;
+            errorElement.style.display = 'block';
+        }
+        
+        // Hide error message
+        function hideError(elementId) {
+            document.getElementById(elementId).style.display = 'none';
+        }
+        
+        // Clear sender text
         function clearText() {
             document.getElementById('text-input').value = '';
             document.getElementById('password-input').value = '';
@@ -477,22 +793,21 @@
             hideError('sender-error');
         }
         
-        function clearReceivedText() {
-            document.getElementById('content-input').value = '';
-            document.getElementById('recipient-password-input').value = '';
+        // Clear receiver data
+        function clearReceiver() {
+            document.getElementById('chunk-input').value = '';
+            document.getElementById('decrypt-password').value = '';
             document.getElementById('decrypted-content').style.display = 'none';
             document.getElementById('copy-text-control').style.display = 'none';
+            document.getElementById('progress-bar').style.width = '0%';
+            document.getElementById('chunks-status').textContent = 'No chunks added yet';
+            document.getElementById('received-chunks-list').innerHTML = '';
+            document.getElementById('decrypt-btn').disabled = true;
+            
+            // Reset received chunks
+            receivedChunks = {};
+            
             hideError('receiver-error');
-        }
-        
-        function showError(message, elementId) {
-            const errorElement = document.getElementById(elementId);
-            errorElement.textContent = message;
-            errorElement.style.display = 'block';
-        }
-        
-        function hideError(elementId) {
-            document.getElementById(elementId).style.display = 'none';
         }
     </script>
 </body>

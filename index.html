@@ -3,834 +3,153 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Secure Text & Code Sharing Tool</title>
+    <title>Simple Text Encryption</title>
     <style>
         body {
             font-family: Arial, sans-serif;
-            max-width: 1000px;
+            max-width: 800px;
             margin: 0 auto;
             padding: 20px;
-            line-height: 1.6;
-            background-color: #f8f9fa;
-            color: #333;
-        }
-        h1, h2, h3 {
-            text-align: center;
-            color: #2c3e50;
-        }
-        .container {
-            background-color: white;
-            border-radius: 8px;
-            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
-            padding: 25px;
-            margin-bottom: 20px;
-        }
-        .input-container {
-            display: flex;
-            flex-direction: column;
-            gap: 15px;
-        }
-        input[type="text"], input[type="number"] {
-            padding: 12px;
-            border: 1px solid #ddd;
-            border-radius: 4px;
-            font-size: 16px;
         }
         textarea {
             width: 100%;
-            height: 250px;
-            padding: 12px;
-            border: 1px solid #ddd;
-            border-radius: 4px;
-            font-family: monospace;
-            resize: vertical;
-            box-sizing: border-box;
-            font-size: 14px;
-            tab-size: 4;
-            white-space: pre;
+            height: 200px;
+            margin-bottom: 10px;
         }
-        .controls {
-            display: flex;
-            gap: 10px;
-            margin: 15px 0;
-            justify-content: center;
-            flex-wrap: wrap;
+        .output {
+            background-color: #f5f5f5;
+            padding: 10px;
+            border: 1px solid #ddd;
+            min-height: 100px;
+            margin-top: 20px;
+            white-space: pre-wrap;
+            display: none;
         }
         button {
-            background-color: #3498db;
-            color: white;
-            border: none;
-            padding: 12px 20px;
-            border-radius: 4px;
-            cursor: pointer;
-            font-size: 16px;
-            transition: background-color 0.2s;
-        }
-        button:hover {
-            background-color: #2980b9;
-        }
-        button.danger {
-            background-color: #e74c3c;
-        }
-        button.danger:hover {
-            background-color: #c0392b;
-        }
-        button.success {
-            background-color: #2ecc71;
-        }
-        button.success:hover {
-            background-color: #27ae60;
-        }
-        button:disabled {
-            background-color: #95a5a6;
-            cursor: not-allowed;
-        }
-        .chunk-item {
-            margin-bottom: 20px;
-            border: 1px solid #ddd;
-            border-radius: 4px;
-            padding: 15px;
-            background-color: #f9f9f9;
-        }
-        .chunk-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 10px;
-            font-weight: bold;
-        }
-        .chunk-data {
-            width: 100%;
-            height: 100px;
-            padding: 12px;
-            border: 1px solid #ddd;
-            border-radius: 4px;
-            margin: 10px 0;
-            font-family: monospace;
-            box-sizing: border-box;
-            background-color: #f5f5f5;
-            resize: none;
-            font-size: 12px;
-            white-space: pre;
-            overflow: auto;
-        }
-        .notification {
-            background-color: #d4edda;
-            color: #155724;
             padding: 10px 15px;
-            border-radius: 4px;
-            margin-top: 10px;
-            text-align: center;
-            display: none;
-        }
-        #decrypted-content {
-            width: 100%;
-            min-height: 400px;
-            padding: 12px;
-            border: 1px solid #ddd;
-            border-radius: 4px;
-            font-family: monospace;
-            box-sizing: border-box;
-            background-color: #f5f5f5;
-            white-space: pre;
-            overflow: auto;
-            display: none;
-            tab-size: 4;
-            font-size: 14px;
-            line-height: 1.5;
-        }
-        .copy-button {
-            background-color: #7f8c8d;
+            background-color: #4CAF50;
             color: white;
             border: none;
-            padding: 8px 15px;
-            border-radius: 4px;
             cursor: pointer;
-            font-size: 14px;
-        }
-        .copy-button:hover {
-            background-color: #6c7a7d;
-        }
-        .mode-toggle {
-            display: flex;
-            justify-content: center;
-            margin-bottom: 20px;
-            gap: 10px;
-        }
-        .mode-button {
-            background-color: #ecf0f1;
-            color: #7f8c8d;
-            border: 1px solid #ddd;
-            padding: 8px 15px;
-            border-radius: 4px;
-            cursor: pointer;
-            font-size: 14px;
-        }
-        .mode-button.active {
-            background-color: #3498db;
-            color: white;
-            border-color: #3498db;
-        }
-        .tab-content {
-            display: none;
-        }
-        .tab-content.active {
-            display: block;
-        }
-        footer {
-            text-align: center;
-            margin-top: 30px;
-            color: #7f8c8d;
-            font-size: 12px;
+            margin-right: 10px;
         }
         .error {
-            background-color: #f8d7da;
-            color: #721c24;
-            padding: 10px 15px;
-            border-radius: 4px;
+            color: red;
             margin-top: 10px;
-            text-align: center;
             display: none;
-        }
-        .info-box {
-            background-color: #e3f2fd;
-            border: 1px solid #bbdefb;
-            border-radius: 4px;
-            padding: 15px;
-            margin: 15px 0;
-            font-size: 14px;
-            color: #0d47a1;
-        }
-        .info-box h3 {
-            margin-top: 0;
-            color: #1976d2;
-        }
-        .steps {
-            margin-top: 10px;
-            padding-left: 20px;
-        }
-        .steps li {
-            margin-bottom: 8px;
-        }
-        #chunks-list {
-            max-height: 600px;
-            overflow-y: auto;
-            padding: 10px;
-        }
-        #received-chunks-list {
-            margin: 15px 0;
-            padding: 10px;
-            border: 1px solid #ddd;
-            border-radius: 4px;
-            background-color: #f5f5f5;
-        }
-        .progress-container {
-            width: 100%;
-            background-color: #e0e0e0;
-            border-radius: 4px;
-            margin: 15px 0;
-            height: 10px;
-        }
-        .progress-bar {
-            height: 100%;
-            background-color: #4CAF50;
-            border-radius: 4px;
-            transition: width 0.3s;
-            width: 0%;
-        }
-        .status {
-            text-align: center;
-            margin: 10px 0;
-            font-size: 14px;
-            color: #666;
-        }
-        .highlight {
-            background-color: #fff3cd;
-            padding: 3px 6px;
-            border-radius: 4px;
-            font-weight: bold;
-        }
-        .chunk-indicator {
-            margin-top: 5px;
-            color: #666;
-            font-size: 14px;
-        }
-        .privacy-notice {
-            background-color: #f8f9fa;
-            border: 1px solid #ddd;
-            border-radius: 4px;
-            padding: 15px;
-            margin: 20px 0;
-            font-size: 14px;
-            color: #666;
-        }
-        .privacy-notice h3 {
-            color: #666;
-            margin-top: 0;
-        }
-        .filename-input {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            margin-bottom: 15px;
-        }
-        .filename-input input {
-            flex-grow: 1;
-        }
-        .output-options {
-            margin-top: 20px;
-            display: none;
-        }
-        .privacy-toggle {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            margin-bottom: 15px;
-            padding: 10px;
-            border: 1px solid #ddd;
-            border-radius: 4px;
-            background-color: #f8f9fa;
-        }
-        .privacy-toggle input[type="checkbox"] {
-            width: 18px;
-            height: 18px;
-        }
-        .view-options {
-            display: flex;
-            margin: 15px 0;
-            gap: 15px;
-            flex-wrap: wrap;
-            justify-content: center;
-        }
-        .font-controls {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            margin-bottom: 10px;
-        }
-        .font-size-button {
-            padding: 5px 10px;
-            background-color: #f1f1f1;
-            border: 1px solid #ddd;
-            border-radius: 4px;
-            cursor: pointer;
-        }
-        .fullscreen-button {
-            position: absolute;
-            top: 10px;
-            right: 10px;
-            padding: 8px;
-            background-color: rgba(255, 255, 255, 0.8);
-            border: 1px solid #ddd;
-            border-radius: 4px;
-            cursor: pointer;
-            z-index: 10;
-        }
-        .content-wrapper {
-            position: relative;
-        }
-        .fullscreen {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100vw;
-            height: 100vh;
-            z-index: 9999;
-            background-color: white;
-            overflow: auto;
-            padding: 20px;
-            box-sizing: border-box;
-        }
-        .fullscreen #decrypted-content {
-            height: calc(100vh - 150px);
-            max-height: none;
-        }
-        .exit-fullscreen {
-            position: fixed;
-            top: 20px;
-            right: 20px;
-            z-index: 10000;
-            background-color: #e74c3c;
-            color: white;
-            border: none;
-            padding: 10px 15px;
-            border-radius: 4px;
-            cursor: pointer;
-        }
-        /* Syntax highlighting container */
-        #syntax-highlight {
-            display: none;
-        }
-        .line-numbers {
-            counter-reset: line;
-            padding-right: 10px;
-            text-align: right;
-            color: #999;
-            border-right: 1px solid #ddd;
-            margin-right: 10px;
-            user-select: none;
-            display: inline-block;
-        }
-        .code-line:before {
-            counter-increment: line;
-            content: counter(line);
-            display: inline-block;
-            width: 1em;
-            text-align: right;
-            margin-right: 0.5em;
-        }
-        .header-message {
-            background-color: #ffe082;
-            padding: 10px;
-            border-radius: 4px;
-            margin-bottom: 15px;
-            text-align: center;
-            font-weight: bold;
-        }
-        .code-format-options {
-            display: flex;
-            gap: 10px;
-            align-items: center;
-            margin-bottom: 10px;
-        }
-        .format-button {
-            padding: 5px 10px;
-            border: 1px solid #ddd;
-            border-radius: 4px;
-            background-color: #f1f1f1;
-            cursor: pointer;
-        }
-        .format-button.active {
-            background-color: #e3f2fd;
-            border-color: #2196F3;
-        }
-        #paste-area {
-            width: 100%;
-            min-height: 400px;
-            padding: 12px;
-            border: 1px solid #ddd;
-            border-radius: 4px;
-            font-family: monospace;
-            box-sizing: border-box;
-            background-color: #f5f5f5;
-            white-space: pre;
-            overflow: auto;
-            display: none;
-            tab-size: 4;
-            font-size: 14px;
-            line-height: 1.5;
-        }
-        .processing-indicator {
-            display: none;
-            text-align: center;
-            margin: 15px 0;
-        }
-        .loading-spinner {
-            display: inline-block;
-            width: 20px;
-            height: 20px;
-            border: 3px solid rgba(0,0,0,0.1);
-            border-radius: 50%;
-            border-top-color: #3498db;
-            animation: spinner 0.7s linear infinite;
-            margin-right: 10px;
-        }
-        @keyframes spinner {
-            to {transform: rotate(360deg);}
-        }
-        .options-toggle {
-            display: flex;
-            justify-content: center;
-            margin: 20px 0;
-            gap: 15px;
-        }
-        .option-button {
-            background-color: #ecf0f1;
-            color: #7f8c8d;
-            border: 1px solid #ddd;
-            padding: 15px 20px;
-            border-radius: 8px;
-            cursor: pointer;
-            font-size: 16px;
-            min-width: 220px;
-            text-align: center;
-            transition: all 0.3s ease;
-        }
-        .option-button:hover {
-            background-color: #d5dbdb;
-            transform: translateY(-2px);
-        }
-        .option-button.active {
-            background-color: #3498db;
-            color: white;
-            border-color: #2980b9;
         }
     </style>
 </head>
 <body>
-    <h1>Secure Text & Code Sharing Tool</h1>
+    <h1>Simple Text Encryption Test</h1>
     
-    <div class="privacy-toggle">
-        <input type="checkbox" id="privacy-mode" onchange="togglePrivacyMode()">
-        <label for="privacy-mode"><strong>Enable Privacy Mode</strong> - Clears browser history and prevents storage of decryption activities</label>
+    <div>
+        <h2>Encrypt</h2>
+        <textarea id="input-text" placeholder="Enter text to encrypt..."></textarea>
+        <input type="text" id="password" placeholder="Enter password" style="width: 100%; margin-bottom: 10px;">
+        <button id="encrypt-btn">Encrypt</button>
+        <div class="error" id="encrypt-error"></div>
+        <div class="output" id="encrypted-output"></div>
     </div>
     
-    <div class="options-toggle">
-        <button class="option-button active" id="code-mode-btn" onclick="switchContentMode('code')">Code Sharing Mode</button>
-        <button class="option-button" id="text-mode-btn" onclick="switchContentMode('text')">Text Sharing Mode</button>
+    <div style="margin-top: 40px;">
+        <h2>Decrypt</h2>
+        <textarea id="encrypted-input" placeholder="Paste encrypted text here..."></textarea>
+        <input type="text" id="decrypt-password" placeholder="Enter password" style="width: 100%; margin-bottom: 10px;">
+        <button id="decrypt-btn">Decrypt</button>
+        <div class="error" id="decrypt-error"></div>
+        <div class="output" id="decrypted-output"></div>
     </div>
-    
-    <div id="code-content" class="content-section">
-        <div class="mode-toggle">
-            <button class="mode-button active" id="sender-mode-btn" onclick="switchMode('sender')">Encrypt & Split</button>
-            <button class="mode-button" id="receiver-mode-btn" onclick="switchMode('receiver')">Reassemble & Decrypt</button>
-        </div>
-        
-        <div id="sender-mode" class="tab-content active">
-            <div class="container">
-                <h2>Split & Encrypt Code</h2>
-                <div class="info-box">
-                    <h3>How this works:</h3>
-                    <p>This tool perfectly preserves code structure when splitting and encrypting:</p>
-                    <ol class="steps">
-                        <li>Paste your code with all indentation and formatting intact</li>
-                        <li>Create a password (remember this for decryption)</li>
-                        <li>Click "Create Encrypted Chunks"</li>
-                        <li>Share each chunk separately through any medium (e.g., LinkedIn messages)</li>
-                    </ol>
-                    <p>The receiver will be able to reassemble the exact original code with all formatting preserved.</p>
-                </div>
-                
-                <div class="input-container">
-                    <input type="text" id="password-input" placeholder="Enter a password for encryption (required)" />
-                    <div style="display: flex; gap: 15px; align-items: center;">
-                        <label for="chunk-size">Characters per chunk:</label>
-                        <input type="number" id="chunk-size" value="6000" min="1000" max="8000" style="width: 100px;" />
-                        <span style="font-size: 14px; color: #666;">(recommended: 6000 for LinkedIn)</span>
-                    </div>
-                    <div class="header-message">Paste your code below with all indentation and formatting</div>
-                    <textarea id="text-input" placeholder="Paste your code here with all formatting and indentation intact..."></textarea>
-                </div>
-                
-                <div class="controls">
-                    <button id="encrypt-btn" class="success" onclick="splitAndEncrypt()">Create Encrypted Chunks</button>
-                    <button id="clear-btn" class="danger" onclick="clearText()">Clear</button>
-                </div>
-                
-                <div class="processing-indicator" id="processing-indicator">
-                    <span class="loading-spinner"></span>
-                    <span>Processing large text, please wait...</span>
-                </div>
-                
-                <div class="error" id="sender-error"></div>
-                
-                <div id="output-container" style="display: none;">
-                    <h3>Encrypted Chunks</h3>
-                    <p class="status">Copy and share each chunk separately. The recipient will need all chunks and your password.</p>
-                    
-                    <div id="chunks-list"></div>
-                </div>
-            </div>
-        </div>
-        
-        <div id="receiver-mode" class="tab-content">
-            <div class="container">
-                <h2>Reassemble & Decrypt Code</h2>
-                <div class="info-box">
-                    <h3>How to retrieve the original code:</h3>
-                    <ol class="steps">
-                        <li>Paste each encrypted chunk you received (they can be in any order)</li>
-                        <li>Enter the password provided by the sender</li>
-                        <li>Click "Reassemble & Decrypt" to see the original code with exact formatting</li>
-                    </ol>
-                    <p>All indentation, spacing, and formatting from the original code will be perfectly preserved.</p>
-                </div>
-                
-                <div class="input-container">
-                    <textarea id="chunk-input" placeholder="Paste an encrypted chunk here..."></textarea>
-                    <button onclick="addChunk()">Add Chunk</button>
-                    
-                    <div class="progress-container">
-                        <div class="progress-bar" id="progress-bar"></div>
-                    </div>
-                    <p class="status" id="chunks-status">No chunks added yet</p>
-                    
-                    <div id="received-chunks-list"></div>
-                    
-                    <input type="text" id="decrypt-password" placeholder="Enter the password to decrypt" />
-                </div>
-                
-                <div class="controls">
-                    <button id="decrypt-btn" class="success" onclick="assembleAndDecrypt()" disabled>Reassemble & Decrypt</button>
-                    <button class="danger" onclick="clearReceiver()">Clear All</button>
-                </div>
-                
-                <div class="processing-indicator" id="decryption-indicator">
-                    <span class="loading-spinner"></span>
-                    <span>Decrypting content, please wait...</span>
-                </div>
-                
-                <div class="error" id="receiver-error"></div>
-                
-                <div class="output-options" id="output-options" style="display: none;">
-                    <div class="content-wrapper">
-                        <button class="fullscreen-button" onclick="toggleFullscreen()">
-                            <span style="font-size:20px">⛶</span>
-                        </button>
-                        
-                        <div class="font-controls">
-                            <span>Font Size:</span>
-                            <button class="font-size-button" onclick="changeFontSize('smaller')">A-</button>
-                            <button class="font-size-button" onclick="changeFontSize('larger')">A+</button>
-                        </div>
-                        
-                        <div class="code-format-options">
-                            <span>Mode:</span>
-                            <button id="view-mode-btn" class="format-button active" onclick="switchViewMode('view')">View Only</button>
-                            <button id="edit-mode-btn" class="format-button" onclick="switchViewMode('edit')">Edit</button>
-                        </div>
-                        
-                        <pre id="decrypted-content"></pre>
-                        <textarea id="paste-area"></textarea>
-                        
-                        <div class="controls">
-                            <button class="copy-button" id="copy-content-btn" onclick="copyContent()">Copy All</button>
-                            <button class="success" id="download-btn" onclick="downloadDecryptedText()">Download as File</button>
-                            <button class="success" id="save-btn" style="display:none" onclick="saveEditedText()">Save Changes</button>
-                            <div class="notification" id="text-copy-notification">Content copied to clipboard!</div>
-                        </div>
-                        
-                        <div class="filename-input" id="filename-container">
-                            <label for="filename">Filename:</label>
-                            <input type="text" id="filename" value="decrypted_code.txt" />
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-    
-    <div id="text-content" class="content-section" style="display:none;">
-        <div class="mode-toggle">
-            <button class="mode-button active" id="text-sender-mode-btn" onclick="switchTextMode('text-sender')">Send Text</button>
-            <button class="mode-button" id="text-receiver-mode-btn" onclick="switchTextMode('text-receiver')">Receive Text</button>
-        </div>
-        
-        <div id="text-sender-mode" class="tab-content active">
-            <div class="container">
-                <h2>Encrypt & Share Text</h2>
-                <div class="info-box">
-                    <h3>How to share text securely:</h3>
-                    <ol class="steps">
-                        <li>Enter your text and create a password</li>
-                        <li>Click "Generate Secure Link" to encrypt your text</li>
-                        <li>Copy the encrypted data and share it via any platform</li>
-                        <li>Share the password separately through a secure channel</li>
-                    </ol>
-                </div>
-                
-                <div class="input-container">
-                    <input type="text" id="text-password-input" placeholder="Enter a password for encryption (required)" />
-                    <textarea id="plain-text-input" placeholder="Type or paste your text here..."></textarea>
-                </div>
-                
-                <div class="controls">
-                    <button id="text-encrypt-btn" class="success" onclick="encryptText()">Generate Encrypted Text</button>
-                    <button id="text-clear-btn" class="danger" onclick="clearPlainText()">Clear</button>
-                </div>
-                
-                <div class="processing-indicator" id="text-processing-indicator">
-                    <span class="loading-spinner"></span>
-                    <span>Encrypting text, please wait...</span>
-                </div>
-                
-                <div class="error" id="text-sender-error"></div>
-                
-                <div id="text-output-container" style="display: none;">
-                    <h3>Encrypted Text</h3>
-                    <p class="status">Copy this encrypted text and share it with the recipient. They will need the password to decrypt it.</p>
-                    
-                    <textarea id="encrypted-output" class="chunk-data" readonly></textarea>
-                    
-                    <div class="controls">
-                        <button class="copy-button" onclick="copyToClipboard('encrypted-output')">Copy Encrypted Text</button>
-                    </div>
-                    <div class="notification" id="encrypted-copy-notification">Encrypted text copied to clipboard!</div>
-                </div>
-            </div>
-        </div>
-        
-        <div id="text-receiver-mode" class="tab-content">
-            <div class="container">
-                <h2>Decrypt & Read Text</h2>
-                <div class="info-box">
-                    <h3>How to read encrypted text:</h3>
-                    <ol class="steps">
-                        <li>Paste the encrypted text you received</li>
-                        <li>Enter the password provided by the sender</li>
-                        <li>Click "Decrypt Text" to view the original message</li>
-                    </ol>
-                </div>
-                
-                <div class="input-container">
-                    <textarea id="encrypted-text-input" placeholder="Paste the encrypted text here..."></textarea>
-                    <input type="text" id="text-decrypt-password" placeholder="Enter the decryption password" />
-                </div>
-                
-                <div class="controls">
-                    <button id="text-decrypt-btn" class="success" onclick="decryptText()">Decrypt Text</button>
-                    <button class="danger" onclick="clearEncryptedText()">Clear</button>
-                </div>
-                
-                <div class="processing-indicator" id="text-decryption-indicator">
-                    <span class="loading-spinner"></span>
-                    <span>Decrypting text, please wait...</span>
-                </div>
-                
-                <div class="error" id="text-receiver-error"></div>
-                
-                <div id="text-result-container" style="display: none;">
-                    <h3>Decrypted Text</h3>
-                    <pre id="text-decrypted-content"></pre>
-                    
-                    <div class="controls">
-                        <button class="copy-button" onclick="copyToClipboard('text-decrypted-content')">Copy Text</button>
-                        <button class="success" onclick="downloadText()">Download as Text File</button>
-                    </div>
-                    <div class="notification" id="decrypted-copy-notification">Text copied to clipboard!</div>
-                </div>
-            </div>
-        </div>
-    </div>
-    
-    <div class="privacy-notice">
-        <h3>Privacy Information</h3>
-        <p>This tool operates entirely within your browser and does not transmit any data to external servers.</p>
-        <ul>
-            <li><strong>No server communication:</strong> All encryption/decryption happens locally in your browser</li>
-            <li><strong>No data storage:</strong> When Privacy Mode is enabled, no information is stored in browser history or local storage</li>
-            <li><strong>Formatting preserved:</strong> All indentation, whitespace, and special characters are exactly preserved</li>
-        </ul>
-        <p><strong>Important:</strong> For complete privacy, we recommend using this tool in a private/incognito browser window.</p>
-    </div>
-    
-    <footer>
-        <p>This tool works entirely in your browser. No data is sent to any server.</p>
-    </footer>
-
-    <!-- Element for fullscreen mode -->
-    <button class="exit-fullscreen" id="exit-fullscreen" style="display: none;" onclick="exitFullscreen()">Exit Fullscreen Mode</button>
 
     <script>
-        // Global variables
-        let receivedChunks = {};
-        let totalChunks = 0;
-        let privacyModeEnabled = false;
-        let decryptedContent = '';
-        let currentFontSize = 14; // Base font size in pixels
-        
-        // Show error message
-        function showError(message, elementId) {
-            const errorElement = document.getElementById(elementId);
-            errorElement.textContent = message;
-            errorElement.style.display = 'block';
+        // Simple XOR encryption
+        function encrypt(text, password) {
+            let result = '';
+            for (let i = 0; i < text.length; i++) {
+                const charCode = text.charCodeAt(i) ^ password.charCodeAt(i % password.length);
+                result += String.fromCharCode(charCode);
+            }
+            return btoa(result); // Convert to base64
         }
         
-        // Hide error message
-        function hideError(elementId) {
-            document.getElementById(elementId).style.display = 'none';
+        // Decrypt
+        function decrypt(encryptedBase64, password) {
+            try {
+                const encryptedText = atob(encryptedBase64); // Convert from base64
+                let result = '';
+                for (let i = 0; i < encryptedText.length; i++) {
+                    const charCode = encryptedText.charCodeAt(i) ^ password.charCodeAt(i % password.length);
+                    result += String.fromCharCode(charCode);
+                }
+                return result;
+            } catch (error) {
+                throw new Error("Decryption failed. Invalid format or wrong password.");
+            }
         }
         
-        // Initialize
-        document.addEventListener('DOMContentLoaded', function() {
-            // Check if privacy mode was previously enabled
-            const storedPrivacyMode = sessionStorage.getItem('privacyModeEnabled');
-            if (storedPrivacyMode === 'true') {
-                document.getElementById('privacy-mode').checked = true;
-                privacyModeEnabled = true;
+        // Event handlers
+        document.getElementById('encrypt-btn').addEventListener('click', function() {
+            const text = document.getElementById('input-text').value;
+            const password = document.getElementById('password').value;
+            const errorElement = document.getElementById('encrypt-error');
+            const outputElement = document.getElementById('encrypted-output');
+            
+            errorElement.style.display = 'none';
+            
+            if (!text.trim() || !password.trim()) {
+                errorElement.textContent = 'Please enter both text and password.';
+                errorElement.style.display = 'block';
+                return;
             }
             
-            // Set initial font size
-            document.getElementById('decrypted-content').style.fontSize = currentFontSize + 'px';
-            document.getElementById('paste-area').style.fontSize = currentFontSize + 'px';
+            try {
+                const encrypted = encrypt(text, password);
+                outputElement.textContent = encrypted;
+                outputElement.style.display = 'block';
+                console.log("Encryption successful");
+            } catch (error) {
+                errorElement.textContent = error.message;
+                errorElement.style.display = 'block';
+                console.error("Encryption error:", error);
+            }
         });
         
-        // Switch between code and text content modes
-        function switchContentMode(mode) {
-            // Update button states
-            document.getElementById('code-mode-btn').classList.remove('active');
-            document.getElementById('text-mode-btn').classList.remove('active');
-            document.getElementById(mode + '-mode-btn').classList.add('active');
+        document.getElementById('decrypt-btn').addEventListener('click', function() {
+            const encryptedText = document.getElementById('encrypted-input').value;
+            const password = document.getElementById('decrypt-password').value;
+            const errorElement = document.getElementById('decrypt-error');
+            const outputElement = document.getElementById('decrypted-output');
             
-            // Update content visibility
-            if (mode === 'code') {
-                document.getElementById('code-content').style.display = 'block';
-                document.getElementById('text-content').style.display = 'none';
-            } else {
-                document.getElementById('code-content').style.display = 'none';
-                document.getElementById('text-content').style.display = 'block';
+            errorElement.style.display = 'none';
+            
+            if (!encryptedText.trim() || !password.trim()) {
+                errorElement.textContent = 'Please enter both encrypted text and password.';
+                errorElement.style.display = 'block';
+                return;
             }
-        }
-        
-        // Toggle privacy mode
-        function togglePrivacyMode() {
-            privacyModeEnabled = document.getElementById('privacy-mode').checked;
-            sessionStorage.setItem('privacyModeEnabled', privacyModeEnabled);
             
-            if (privacyModeEnabled) {
-                // Clear any existing data when enabling privacy mode
-                clearAllSessionData();
+            try {
+                const decrypted = decrypt(encryptedText, password);
+                outputElement.textContent = decrypted;
+                outputElement.style.display = 'block';
+                console.log("Decryption successful");
+            } catch (error) {
+                errorElement.textContent = error.message;
+                errorElement.style.display = 'block';
+                console.error("Decryption error:", error);
             }
-        }
+        });
         
-        // Clear all session data for privacy
-        function clearAllSessionData() {
-            if (privacyModeEnabled) {
-                // Clear browser storage
-                try {
-                    sessionStorage.clear();
-                    localStorage.clear();
-                } catch (e) {
-                    console.error('Error clearing storage:', e);
-                }
-                
-                // Re-set the privacy mode flag
-                sessionStorage.setItem('privacyModeEnabled', 'true');
-            }
-        }
-        
-        // Switch between sender and receiver modes for code
-        function switchMode(mode) {
-            // Update button states
-            document.querySelectorAll('.mode-button').forEach(btn => {
-                btn.classList.remove('active');
-            });
-            document.getElementById(mode + '-mode-btn').classList.add('active');
-            
-            // Update content visibility
-            document.querySelectorAll('.tab-content').forEach(content => {
-                content.classList.remove('active');
-            });
-            document.getElementById(mode + '-mode').classList.add('active');
-            
-            // Clear error messages
-            hideError('sender-error');
-            hideError('receiver-error');
-        }
-        
-        // Switch between sender and receiver modes for text
-        function switchTextMode(mode) {
-            // Update button states
-            document.getElementById('text-sender-mode-btn').classList.remove('active');
-            document.getElementById('text-receiver-mode-btn').classList.remove('active');
-            document.getElementById(mode + '-mode-btn').classList.add('active');
-            
-            // Update content visibility
-            document.getElementById('text-sender-mode').classList.remove('active');
-            document.getElementById('text-receiver-mode').classList.remove('active');
-            document.getElementById(mode).classList.add('active');
-            
-            // Clear error messages
-            hideError('text-sender-error');
-            hideError('text-receiver-error');
-        }
+        // Add a simple test on load to verify JS is working
+        window.addEventListener('load', function() {
+            console.log("Page loaded successfully. JavaScript is running.");
+            // Create a test element to verify DOM manipulation works
+            const testElement = document.createElement('div');
+            testElement.style.display = 'none';
+            testElement.id = 'js-test';
+            document.body.appendChild(testElement);
+            console.log("DOM manipulation test successful:", document.getElementById('js-test') !== null);
+        });
+    </script>
+</body>
+</html>
